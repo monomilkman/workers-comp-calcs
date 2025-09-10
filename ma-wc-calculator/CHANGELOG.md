@@ -2,6 +2,57 @@
 
 All notable changes to the Massachusetts Workers' Compensation Benefits Calculator will be documented in this file.
 
+## [1.4.0] - 2025-09-10 (MVA & GL Settlement Features)
+
+### Added
+- **MVA Settlement Calculator**: Dedicated tab for Motor Vehicle Accident settlement calculations
+  - Specialized MVA settlement formulas and calculations
+  - Motor vehicle accident specific deductions and adjustments
+  - Professional MVA settlement statement generation
+- **GL Settlement Calculator**: General Liability settlement functionality
+  - Complete GL settlement calculation framework
+  - General liability specific fee structures
+  - Comprehensive GL settlement documentation
+- **Advanced Lien Management**: Enhanced lien handling across all settlement types
+  - Medical lien tracking and calculation
+  - Healthcare provider lien management
+  - Medicare/Medicaid lien considerations
+  - Attorney lien and cost tracking
+- **Settlement Sheet Enhancements**: Major improvements to settlement documentation
+  - Logo support for professional branding in settlement statements
+  - Enhanced PDF generation with custom logo placement
+  - Improved settlement sheet formatting and layout
+  - Professional document presentation for client and court use
+- **Logo Integration**: Custom logo support throughout the application
+  - Logo upload and management functionality
+  - Professional branding in exported documents
+  - Consistent logo placement across settlement sheets
+  - Logo preview and management interface
+
+### Enhanced
+- **Settlement Calculator**: Expanded settlement calculation capabilities
+  - Multi-type settlement support (WC, MVA, GL)
+  - Advanced deduction management across settlement types
+  - Improved calculation accuracy and validation
+- **Export Functionality**: Enhanced document generation
+  - Logo-enabled PDF exports
+  - Professional settlement statement formatting
+  - Improved document layout and presentation
+- **User Interface**: Better organization of settlement features
+  - Dedicated tabs for different settlement types
+  - Improved navigation between settlement calculators
+  - Enhanced user experience for settlement processing
+
+### Technical
+- **Component Architecture**: Modular settlement calculator design
+  - Separate components for MVA, GL, and WC settlements
+  - Shared settlement calculation utilities
+  - Improved code organization and maintainability
+- **Logo Utilities**: Custom logo handling infrastructure
+  - Logo processing and optimization utilities
+  - Logo storage and retrieval functionality
+  - Logo integration with export systems
+
 ## [1.3.0] - 2025-09-10 (Deployment & Automation Release)
 
 ### Added
