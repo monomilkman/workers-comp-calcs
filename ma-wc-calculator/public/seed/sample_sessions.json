@@ -1,0 +1,142 @@
+[
+  {
+    "id": "sample-1",
+    "name": "High AWW - Standard Case",
+    "description": "AWW 1000, DOI 2024-11-01, EC 600, ledger with Section 34 and 35 EC entries",
+    "data": {
+      "aww": 1000.00,
+      "date_of_injury": "2024-11-01",
+      "earning_capacity_default": 600.00,
+      "state_rate_table": [
+        {
+          "effective_from": "2024-10-01",
+          "effective_to": "2025-09-30",
+          "state_min": 365.83,
+          "state_max": 1500.00,
+          "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+        }
+      ],
+      "ledger": [
+        {
+          "id": "entry-1",
+          "type": "34",
+          "start": "2024-11-01",
+          "end": "2025-05-01",
+          "aww_used": 1000.00,
+          "ec_used": null,
+          "weeks": 26.0,
+          "raw_weekly": 600.00,
+          "final_weekly": 600.00,
+          "dollars_paid": 15600.00,
+          "notes": "Initial TTD period"
+        },
+        {
+          "id": "entry-2",
+          "type": "35ec",
+          "start": "2025-05-02",
+          "end": null,
+          "aww_used": 1000.00,
+          "ec_used": 600.00,
+          "weeks": 18.14,
+          "raw_weekly": 240.00,
+          "final_weekly": 240.00,
+          "dollars_paid": 4353.60,
+          "notes": "Returned to work with earning capacity"
+        }
+      ],
+      "settings": {
+        "proration": "days",
+        "today": "2025-09-09"
+      }
+    }
+  },
+  {
+    "id": "sample-2",
+    "name": "Low AWW - State Min Logic",
+    "description": "AWW 500, DOI 2025-01-02, demonstrates state min where AWW >= min but raw_34 < min",
+    "data": {
+      "aww": 500.00,
+      "date_of_injury": "2025-01-02",
+      "earning_capacity_default": 600.00,
+      "state_rate_table": [
+        {
+          "effective_from": "2024-10-01",
+          "effective_to": "2025-09-30",
+          "state_min": 365.83,
+          "state_max": 1500.00,
+          "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+        }
+      ],
+      "ledger": [
+        {
+          "id": "entry-1",
+          "type": "34",
+          "start": "2025-01-02",
+          "end": "2025-07-02",
+          "aww_used": 500.00,
+          "ec_used": null,
+          "weeks": 26.0,
+          "raw_weekly": 300.00,
+          "final_weekly": 365.83,
+          "dollars_paid": 9511.58,
+          "notes": "TTD - bumped to state minimum (AWW >= state min)"
+        }
+      ],
+      "settings": {
+        "proration": "days",
+        "today": "2025-09-09"
+      }
+    }
+  },
+  {
+    "id": "sample-3",
+    "name": "Very Low AWW - Below State Min",
+    "description": "AWW 300, DOI 2025-01-02, shows AWW < min scenario (worker paid AWW)",
+    "data": {
+      "aww": 300.00,
+      "date_of_injury": "2025-01-02",
+      "earning_capacity_default": 600.00,
+      "state_rate_table": [
+        {
+          "effective_from": "2024-10-01",
+          "effective_to": "2025-09-30",
+          "state_min": 365.83,
+          "state_max": 1500.00,
+          "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+        }
+      ],
+      "ledger": [
+        {
+          "id": "entry-1",
+          "type": "34",
+          "start": "2025-01-02",
+          "end": "2025-04-02",
+          "aww_used": 300.00,
+          "ec_used": null,
+          "weeks": 13.0,
+          "raw_weekly": 180.00,
+          "final_weekly": 300.00,
+          "dollars_paid": 3900.00,
+          "notes": "TTD - AWW below state min, so paid AWW"
+        },
+        {
+          "id": "entry-2",
+          "type": "34A",
+          "start": "2025-04-03",
+          "end": null,
+          "aww_used": 300.00,
+          "ec_used": null,
+          "weeks": 23.0,
+          "raw_weekly": 200.00,
+          "final_weekly": 300.00,
+          "dollars_paid": 6900.00,
+          "notes": "Permanent & Total disability - life benefit"
+        }
+      ],
+      "settings": {
+        "proration": "days",
+        "today": "2025-09-09"
+      }
+    }
+  }
+]

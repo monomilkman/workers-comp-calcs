@@ -1,0 +1,37 @@
+[
+  {
+    "effective_from": "2024-10-01",
+    "effective_to": "2025-09-30",
+    "state_min": 365.83,
+    "state_max": 1500.00,
+    "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+  },
+  {
+    "effective_from": "2023-10-01",
+    "effective_to": "2024-09-30",
+    "state_min": 345.50,
+    "state_max": 1418.75,
+    "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+  },
+  {
+    "effective_from": "2022-10-01",
+    "effective_to": "2023-09-30",
+    "state_min": 325.25,
+    "state_max": 1337.50,
+    "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+  },
+  {
+    "effective_from": "2021-10-01",
+    "effective_to": "2022-09-30",
+    "state_min": 312.75,
+    "state_max": 1285.25,
+    "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+  },
+  {
+    "effective_from": "2020-10-01",
+    "effective_to": "2021-09-30",
+    "state_min": 302.50,
+    "state_max": 1242.00,
+    "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+  }
+]

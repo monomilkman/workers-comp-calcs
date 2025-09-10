@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  
+  body {
+    @apply bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 font-sans antialiased;
+    margin: 0;
+    min-height: 100vh;
+    transition: background-color 0.2s ease-in-out, color 0.2s ease-in-out;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-semibold text-gray-900 dark:text-gray-100;
+  }
+  
+  input, select, textarea {
+    @apply border border-gray-300 dark:border-gray-600 rounded-lg px-3 py-2 shadow-sm bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-colors;
+  }
+  
+  input:disabled, select:disabled, textarea:disabled {
+    @apply bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 cursor-not-allowed;
+  }
+}
+
+@layer components {
+  /* Card styles */
+  .card {
+    @apply bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-sm p-6 transition-colors;
+  }
+  
+  .card-hover {
+    @apply hover:shadow-md dark:hover:shadow-xl transition-shadow;
+  }
+  
+  /* Button styles */
+  .btn {
+    @apply inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-lg border focus:outline-none focus:ring-2 focus:ring-offset-2 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed;
+  }
+  
+  .btn-primary {
+    @apply bg-primary-600 hover:bg-primary-700 text-white border-transparent focus:ring-primary-500 shadow-sm;
+  }
+  
+  .btn-secondary {
+    @apply bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-600 focus:ring-primary-500;
+  }
+  
+  .btn-ghost {
+    @apply bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 border-transparent focus:ring-primary-500;
+  }
+  
+  .btn-danger {
+    @apply bg-red-600 hover:bg-red-700 text-white border-transparent focus:ring-red-500 shadow-sm;
+  }
+  
+  .btn-success {
+    @apply bg-accent-600 hover:bg-accent-700 text-white border-transparent focus:ring-accent-500 shadow-sm;
+  }
+  
+  .btn-sm {
+    @apply px-3 py-1.5 text-xs;
+  }
+  
+  .btn-lg {
+    @apply px-6 py-3 text-base;
+  }
+  
+  /* Badge styles */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium;
+  }
+  
+  .badge-primary {
+    @apply bg-primary-100 dark:bg-primary-900/50 text-primary-800 dark:text-primary-200;
+  }
+  
+  .badge-accent {
+    @apply bg-accent-100 dark:bg-accent-900/50 text-accent-800 dark:text-accent-200;
+  }
+  
+  .badge-yellow {
+    @apply bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200;
+  }
+  
+  .badge-red {
+    @apply bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200;
+  }
+  
+  .badge-gray {
+    @apply bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-200;
+  }
+  
+  /* Table styles */
+  .table {
+    @apply w-full text-sm text-left;
+  }
+  
+  .table-header {
+    @apply bg-gray-50 dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700;
+  }
+  
+  .table-header th {
+    @apply px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider;
+  }
+  
+  .table-row {
+    @apply border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors;
+  }
+  
+  .table-cell {
+    @apply px-4 py-3 text-gray-900 dark:text-gray-100;
+  }
+  
+  /* Input styles */
+  .input-group {
+    @apply space-y-2;
+  }
+  
+  .input-label {
+    @apply block text-sm font-medium text-gray-700 dark:text-gray-300;
+  }
+  
+  .input-error {
+    @apply text-sm text-red-600 dark:text-red-400;
+  }
+  
+  .input-help {
+    @apply text-sm text-gray-500 dark:text-gray-400;
+  }
+  
+  /* Loading & feedback */
+  .spinner {
+    @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
+  }
+  
+  .loading-skeleton {
+    @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+  }
+}

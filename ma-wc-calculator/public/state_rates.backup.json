@@ -1,0 +1,237 @@
+{
+  "last_updated": "2025-09-09T19:41:20.257Z",
+  "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates",
+  "rates": [
+    {
+      "effective_from": "2024-10-01",
+      "effective_to": "2025-09-30",
+      "state_min": 365.83,
+      "state_max": 1829.13,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2023-10-01",
+      "effective_to": "2024-09-30",
+      "state_min": 359.34,
+      "state_max": 1796.72,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2022-10-01",
+      "effective_to": "2023-09-30",
+      "state_min": 353.07,
+      "state_max": 1765.34,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2021-10-01",
+      "effective_to": "2022-09-30",
+      "state_min": 338.85,
+      "state_max": 1694.24,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2020-10-01",
+      "effective_to": "2021-09-30",
+      "state_min": 297.56,
+      "state_max": 1487.78,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2019-10-01",
+      "effective_to": "2020-09-30",
+      "state_min": 286.33,
+      "state_max": 1431.66,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2018-10-01",
+      "effective_to": "2019-09-30",
+      "state_min": 276.68,
+      "state_max": 1383.41,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2017-10-01",
+      "effective_to": "2018-09-30",
+      "state_min": 267.61,
+      "state_max": 1338.05,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2016-10-01",
+      "effective_to": "2017-09-30",
+      "state_min": 258.35,
+      "state_max": 1291.74,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2015-10-01",
+      "effective_to": "2016-09-30",
+      "state_min": 251.29,
+      "state_max": 125647,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2014-10-01",
+      "effective_to": "2015-09-30",
+      "state_min": 243,
+      "state_max": 1214.99,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2013-10-01",
+      "effective_to": "2014-09-30",
+      "state_min": 236.26,
+      "state_max": 1181.28,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2012-10-01",
+      "effective_to": "2013-09-30",
+      "state_min": 234.61,
+      "state_max": 1173.06,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2011-10-01",
+      "effective_to": "2012-09-30",
+      "state_min": 227.16,
+      "state_max": 1135.82,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2010-10-01",
+      "effective_to": "2011-09-30",
+      "state_min": 217.61,
+      "state_max": 1088.06,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2009-10-01",
+      "effective_to": "2010-09-30",
+      "state_min": 218.94,
+      "state_max": 1094.7,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2008-10-01",
+      "effective_to": "2009-09-30",
+      "state_min": 218.65,
+      "state_max": 1093.27,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2007-10-01",
+      "effective_to": "2008-09-30",
+      "state_min": 208.71,
+      "state_max": 1043.54,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2006-10-01",
+      "effective_to": "2007-09-30",
+      "state_min": 200.09,
+      "state_max": 1000.43,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2005-10-01",
+      "effective_to": "2006-09-30",
+      "state_min": 191.72,
+      "state_max": 958.58,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2004-10-01",
+      "effective_to": "2005-09-30",
+      "state_min": 183.76,
+      "state_max": 918.78,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2003-10-01",
+      "effective_to": "2004-09-30",
+      "state_min": 176.89,
+      "state_max": 884.46,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2002-10-01",
+      "effective_to": "2003-09-30",
+      "state_min": 176.51,
+      "state_max": 882.57,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2001-10-01",
+      "effective_to": "2002-09-30",
+      "state_min": 178.18,
+      "state_max": 890.94,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "2000-10-01",
+      "effective_to": "2001-09-30",
+      "state_min": 166.18,
+      "state_max": 830.89,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "1999-10-01",
+      "effective_to": "2000-09-30",
+      "state_min": 149.94,
+      "state_max": 749.69,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "1998-10-01",
+      "effective_to": "1999-09-30",
+      "state_min": 139.98,
+      "state_max": 699.91,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "1997-10-01",
+      "effective_to": "1998-09-30",
+      "state_min": 133.11,
+      "state_max": 665.55,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "1996-10-01",
+      "effective_to": "1997-09-30",
+      "state_min": 126.21,
+      "state_max": 631.03,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "1995-10-01",
+      "effective_to": "1996-09-30",
+      "state_min": 120.81,
+      "state_max": 604.03,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "1994-10-01",
+      "effective_to": "1995-09-30",
+      "state_min": 117.13,
+      "state_max": 585.66,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "1993-10-01",
+      "effective_to": "1994-09-30",
+      "state_min": 108.79,
+      "state_max": 565.94,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    },
+    {
+      "effective_from": "1992-10-01",
+      "effective_to": "1993-09-30",
+      "state_min": 108.66,
+      "state_max": 543.3,
+      "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+    }
+  ]
+}
