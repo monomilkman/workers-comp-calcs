@@ -141,7 +141,7 @@ function calculateRawWeekly(
 
 /**
  * Calculate complete weekly rate including state min/max adjustments
- * 
+ *
  * @param type - Benefit type ('34', '35', '35ec', '34A', '31')
  * @param aww - Average Weekly Wage
  * @param options - Configuration including earning capacity and state table
@@ -159,9 +159,26 @@ export function calculateWeeklyRate(
   if (aww <= 0) {
     throw new Error('Average Weekly Wage must be greater than 0');
   }
-  
+
+  // Special handling for Section 35: it must be 75% of the CAPPED Section 34 rate
+  if (type === '35') {
+    // First calculate Section 34 with state min/max applied
+    const section34Result = calculateWeeklyRate('34', aww, options);
+
+    // Apply 75% to the final (capped) Section 34 rate
+    const section35Raw = section34Result.finalWeekly * 0.75;
+
+    // Apply state min/max to the Section 35 rate
+    return applyStateMinMax(
+      section35Raw,
+      aww,
+      options.dateOfInjury,
+      options.stateTable
+    );
+  }
+
   const rawWeekly = calculateRawWeekly(type, aww, { ec: options.ec });
-  
+
   return applyStateMinMax(
     rawWeekly,
     aww,

@@ -43,6 +43,38 @@ describe('calculateWeeklyRate', () => {
     expect(result.finalWeekly).toBe(450); // No adjustment needed
   });
 
+  test('Section 35 applies 75% to CAPPED Section 34 rate when AWW exceeds state max', () => {
+    // Real-world scenario: Employee injured July 25, 2023
+    // AWW: $3,125.33, State Max for that period: $1,765.34
+    const realRates: StateRateRow[] = [
+      {
+        effective_from: '2022-10-01',
+        effective_to: '2023-09-30',
+        state_min: 353.07,
+        state_max: 1765.34
+      }
+    ];
+
+    const aww = 3125.33;
+
+    // First verify Section 34 calculation
+    const section34 = calculateWeeklyRate('34', aww, {
+      dateOfInjury: '2023-07-25',
+      stateTable: realRates
+    });
+    expect(section34.rawWeekly).toBeCloseTo(1875.20, 2); // 3125.33 * 0.60
+    expect(section34.finalWeekly).toBe(1765.34); // Capped to state max
+    expect(section34.appliedRule).toBe('capped_to_max');
+
+    // Section 35 should be 75% of the CAPPED Section 34 rate
+    const section35 = calculateWeeklyRate('35', aww, {
+      dateOfInjury: '2023-07-25',
+      stateTable: realRates
+    });
+    // Expected: 75% of $1,765.34 = $1,324.00 (or $1,324.005)
+    expect(section35.finalWeekly).toBeCloseTo(1324.00, 2);
+  });
+
   test('Section 35 EC calculates (AWW - EC) * 60%', () => {
     const result = calculateWeeklyRate('35ec', 1000, {
       ec: 600,
