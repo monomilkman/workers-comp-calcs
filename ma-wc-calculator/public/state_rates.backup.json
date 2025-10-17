@@ -1,5 +1,5 @@
 {
-  "last_updated": "2025-09-09T19:41:20.257Z",
+  "last_updated": "2025-09-09T19:41:40.252Z",
   "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates",
   "rates": [
     {
@@ -69,7 +69,7 @@
       "effective_from": "2015-10-01",
       "effective_to": "2016-09-30",
       "state_min": 251.29,
-      "state_max": 125647,
+      "state_max": 1256.47,
       "source_url": "https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
     },
     {

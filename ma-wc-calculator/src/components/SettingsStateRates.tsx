@@ -40,11 +40,24 @@ export default function SettingsStateRates({ stateRateTable, onRatesUpdated }: S
       // For development mode, show instructions to run the script manually
       if (import.meta.env.DEV) {
         const shouldProceed = window.confirm(
-          'To update state rates, please run the following command in your terminal:\n\n' +
+          'Development Mode: To fetch new rates from Mass.gov, run:\n\n' +
           'npm run update:rates\n\n' +
-          'After running the command, click "OK" to reload the updated rates, or "Cancel" to abort.'
+          'Then click "OK" to reload the rates file, or "Cancel" to abort.\n\n' +
+          'Note: In production, rates update automatically via GitHub Actions on the 2nd of each month.'
         );
-        
+
+        if (!shouldProceed) {
+          setIsUpdating(false);
+          return;
+        }
+      } else {
+        // In production, explain that this only reloads the file
+        const shouldProceed = window.confirm(
+          'This will reload the state rates file from the server.\n\n' +
+          'Note: New rates are automatically fetched from Mass.gov monthly via GitHub Actions.\n\n' +
+          'Click OK to reload the current rates file.'
+        );
+
         if (!shouldProceed) {
           setIsUpdating(false);
           return;
@@ -59,20 +72,20 @@ export default function SettingsStateRates({ stateRateTable, onRatesUpdated }: S
 
       const ratesData = await ratesResponse.json();
       const newRates = ratesData.rates || ratesData;
-      
+
       onRatesUpdated(newRates);
       setLastUpdateTime(ratesData.last_updated || new Date().toISOString());
-      
+
       // Show success notification
-      alert(`Successfully loaded state rates! Found ${newRates.length} rate periods.`);
+      alert(`Successfully reloaded state rates! Found ${newRates.length} rate periods.`);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
       setError(errorMessage);
-      console.error('Failed to update state rates:', err);
-      
+      console.error('Failed to reload state rates:', err);
+
       // Show error notification
-      alert(`Failed to load state rates: ${errorMessage}`);
+      alert(`Failed to reload state rates: ${errorMessage}`);
     } finally {
       setIsUpdating(false);
     }
@@ -88,7 +101,9 @@ export default function SettingsStateRates({ stateRateTable, onRatesUpdated }: S
         <div>
           <h3 className="text-lg font-medium text-gray-900">State Compensation Rates</h3>
           <p className="text-sm text-gray-600">
-            Automatically fetch the latest rates from Mass.gov
+            {import.meta.env.DEV
+              ? 'Run update script to fetch latest rates from Mass.gov'
+              : 'Rates update automatically monthly via GitHub Actions'}
           </p>
         </div>
         <button
@@ -106,10 +121,10 @@ export default function SettingsStateRates({ stateRateTable, onRatesUpdated }: S
                 <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                 <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
               </svg>
-              Updating...
+              {import.meta.env.DEV ? 'Updating...' : 'Reloading...'}
             </span>
           ) : (
-            'Update Rates'
+            import.meta.env.DEV ? 'Update Rates' : 'Reload Rates'
           )}
         </button>
       </div>
@@ -216,12 +231,12 @@ export default function SettingsStateRates({ stateRateTable, onRatesUpdated }: S
 
       <div className="text-xs text-gray-500 space-y-1">
         <p>
-          <strong>How it works:</strong> Rates are fetched from the official Massachusetts DIA website.
+          <strong>How it works:</strong> Rates are automatically fetched from Mass.gov on the 2nd of each month via GitHub Actions.
         </p>
         <p>
-          <strong>Data source:</strong> <a 
-            href="https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates" 
-            target="_blank" 
+          <strong>Data source:</strong> <a
+            href="https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates"
+            target="_blank"
             rel="noopener noreferrer"
             className="text-blue-600 hover:text-blue-800"
           >
@@ -229,7 +244,7 @@ export default function SettingsStateRates({ stateRateTable, onRatesUpdated }: S
           </a>
         </p>
         <p>
-          <strong>Update frequency:</strong> Manual updates ensure data accuracy and compliance with current regulations.
+          <strong>Update schedule:</strong> Automated monthly updates ensure current rates. New rates are posted to Mass.gov every October 1st.
         </p>
       </div>
     </div>
