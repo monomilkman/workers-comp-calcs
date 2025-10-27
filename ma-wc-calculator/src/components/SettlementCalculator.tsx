@@ -84,7 +84,13 @@ export function SettlementCalculator({
     customNotes: '',
     selectedBenefitTypes: [],
     settlementAmount: 0,
-    settlementAllocations: []
+    settlementAllocations: [],
+    section36Amount: 0,
+    manual34A: {
+      enabled: false,
+      weeklyRate: 0,
+      amountAllocated: 0
+    }
   });
 
   const getBenefitTitle = (type: string) => {
@@ -462,6 +468,51 @@ export function SettlementCalculator({
     if (proposedAmount > 0) {
       handleSettlementAmountChange(proposedAmount);
     }
+  };
+
+  const handleSection36AmountChange = (amount: number) => {
+    setBenefitsOptions(prev => ({
+      ...prev,
+      section36Amount: amount
+    }));
+  };
+
+  const handleManual34AToggle = (enabled: boolean) => {
+    setBenefitsOptions(prev => ({
+      ...prev,
+      manual34A: {
+        ...prev.manual34A!,
+        enabled
+      }
+    }));
+  };
+
+  const handleManual34AWeeklyRateChange = (rate: number) => {
+    setBenefitsOptions(prev => {
+      const amount = prev.manual34A?.amountAllocated || 0;
+      return {
+        ...prev,
+        manual34A: {
+          enabled: true,
+          weeklyRate: rate,
+          amountAllocated: amount
+        }
+      };
+    });
+  };
+
+  const handleManual34AAmountChange = (amount: number) => {
+    setBenefitsOptions(prev => {
+      const rate = prev.manual34A?.weeklyRate || 0;
+      return {
+        ...prev,
+        manual34A: {
+          enabled: true,
+          weeklyRate: rate,
+          amountAllocated: amount
+        }
+      };
+    });
   };
 
   return (
@@ -1076,6 +1127,73 @@ export function SettlementCalculator({
                         </div>
                       </div>
                     )}
+
+                    {/* Section 36 (Scarring/Disfigurement) */}
+                    <div className="pt-3 border-t border-gray-300 dark:border-gray-600">
+                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Section 36 (Scarring/Disfigurement)</label>
+                      <div className="relative mt-1">
+                        <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
+                        <input
+                          type="text"
+                          value={benefitsOptions.section36Amount || ''}
+                          onChange={(e) => handleSection36AmountChange(parseCurrency(e.target.value))}
+                          className="pl-8 w-full"
+                          placeholder="0.00"
+                        />
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                        Flat amount for scarring/disfigurement benefits
+                      </p>
+                    </div>
+
+                    {/* Manual 34A Entry */}
+                    <div className="pt-3 border-t border-gray-300 dark:border-gray-600 space-y-3">
+                      <label className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          checked={benefitsOptions.manual34A?.enabled || false}
+                          onChange={(e) => handleManual34AToggle(e.target.checked)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Include Section 34A (P&T) Manually</span>
+                      </label>
+
+                      {benefitsOptions.manual34A?.enabled && (
+                        <div className="space-y-2 pl-6">
+                          <div>
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Weekly Rate</label>
+                            <div className="relative mt-1">
+                              <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
+                              <input
+                                type="text"
+                                value={benefitsOptions.manual34A?.weeklyRate || ''}
+                                onChange={(e) => handleManual34AWeeklyRateChange(parseCurrency(e.target.value))}
+                                className="pl-6 w-full text-sm"
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                          <div>
+                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Amount Allocated</label>
+                            <div className="relative mt-1">
+                              <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
+                              <input
+                                type="text"
+                                value={benefitsOptions.manual34A?.amountAllocated || ''}
+                                onChange={(e) => handleManual34AAmountChange(parseCurrency(e.target.value))}
+                                className="pl-6 w-full text-sm"
+                                placeholder="0.00"
+                              />
+                            </div>
+                          </div>
+                          {benefitsOptions.manual34A.weeklyRate > 0 && benefitsOptions.manual34A.amountAllocated > 0 && (
+                            <p className="text-xs text-gray-600 dark:text-gray-400">
+                              Covers {(benefitsOptions.manual34A.amountAllocated / benefitsOptions.manual34A.weeklyRate).toFixed(1)} weeks ({((benefitsOptions.manual34A.amountAllocated / benefitsOptions.manual34A.weeklyRate) / 52).toFixed(1)} years)
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

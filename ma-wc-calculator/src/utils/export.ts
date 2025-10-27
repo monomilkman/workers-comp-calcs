@@ -990,6 +990,45 @@ export async function generateBenefitsRemainingPDF(
         yPosition += 6;
       }
 
+      // Section 36 (Scarring/Disfigurement)
+      if (data.options.section36Amount && data.options.section36Amount > 0) {
+        if (yPosition > 270) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        doc.text('Section 36 (Scarring)', colX.benefit, yPosition);
+        doc.text('N/A', colX.weekly, yPosition);
+        doc.text(formatCurrency(data.options.section36Amount), colX.amount, yPosition);
+        doc.text('N/A', colX.weeks, yPosition);
+        doc.text('N/A', colX.years, yPosition);
+
+        totalAllocated += data.options.section36Amount;
+        yPosition += 6;
+      }
+
+      // Manual 34A
+      if (data.options.manual34A?.enabled && data.options.manual34A.amountAllocated > 0) {
+        if (yPosition > 270) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        const weeks34A = data.options.manual34A.weeklyRate > 0
+          ? data.options.manual34A.amountAllocated / data.options.manual34A.weeklyRate
+          : 0;
+        const years34A = weeks34A / 52;
+
+        doc.text('Section 34A (P&T)', colX.benefit, yPosition);
+        doc.text(formatCurrency(data.options.manual34A.weeklyRate), colX.weekly, yPosition);
+        doc.text(formatCurrency(data.options.manual34A.amountAllocated), colX.amount, yPosition);
+        doc.text(weeks34A.toFixed(2), colX.weeks, yPosition);
+        doc.text(years34A.toFixed(2), colX.years, yPosition);
+
+        totalAllocated += data.options.manual34A.amountAllocated;
+        yPosition += 6;
+      }
+
       // Draw bottom line
       yPosition += 2;
       doc.setDrawColor(150, 150, 150);
@@ -1186,6 +1225,34 @@ export function generateBenefitsRemainingExcel(
           allocation.yearsCovered.toFixed(2)
         ]);
         totalAllocated += allocation.amountAllocated;
+      }
+
+      // Section 36
+      if (data.options.section36Amount && data.options.section36Amount > 0) {
+        wsData.push([
+          'Section 36 (Scarring)',
+          'N/A',
+          formatCurrency(data.options.section36Amount),
+          'N/A',
+          'N/A'
+        ]);
+        totalAllocated += data.options.section36Amount;
+      }
+
+      // Manual 34A
+      if (data.options.manual34A?.enabled && data.options.manual34A.amountAllocated > 0) {
+        const weeks34A = data.options.manual34A.weeklyRate > 0
+          ? data.options.manual34A.amountAllocated / data.options.manual34A.weeklyRate
+          : 0;
+        const years34A = weeks34A / 52;
+        wsData.push([
+          'Section 34A (P&T)',
+          formatCurrency(data.options.manual34A.weeklyRate),
+          formatCurrency(data.options.manual34A.amountAllocated),
+          weeks34A.toFixed(2),
+          years34A.toFixed(2)
+        ]);
+        totalAllocated += data.options.manual34A.amountAllocated;
       }
 
       wsData.push(['Total Allocated:', '', formatCurrency(totalAllocated), '', '']);
@@ -1433,6 +1500,42 @@ export async function generateBenefitsRemainingWord(
           })
         );
         totalAllocated += allocation.amountAllocated;
+      }
+
+      // Section 36 (Scarring/Disfigurement)
+      if (data.options.section36Amount && data.options.section36Amount > 0) {
+        tableRows.push(
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph('Section 36 (Scarring)')] }),
+              new TableCell({ children: [new Paragraph('N/A')] }),
+              new TableCell({ children: [new Paragraph(formatCurrency(data.options.section36Amount))] }),
+              new TableCell({ children: [new Paragraph('N/A')] }),
+              new TableCell({ children: [new Paragraph('N/A')] })
+            ]
+          })
+        );
+        totalAllocated += data.options.section36Amount;
+      }
+
+      // Manual 34A
+      if (data.options.manual34A?.enabled && data.options.manual34A.amountAllocated > 0) {
+        const weeks34A = data.options.manual34A.weeklyRate > 0
+          ? data.options.manual34A.amountAllocated / data.options.manual34A.weeklyRate
+          : 0;
+        const years34A = weeks34A / 52;
+        tableRows.push(
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph('Section 34A (P&T)')] }),
+              new TableCell({ children: [new Paragraph(formatCurrency(data.options.manual34A.weeklyRate))] }),
+              new TableCell({ children: [new Paragraph(formatCurrency(data.options.manual34A.amountAllocated))] }),
+              new TableCell({ children: [new Paragraph(weeks34A.toFixed(2))] }),
+              new TableCell({ children: [new Paragraph(years34A.toFixed(2))] })
+            ]
+          })
+        );
+        totalAllocated += data.options.manual34A.amountAllocated;
       }
 
       // Total row

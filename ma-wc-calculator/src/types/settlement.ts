@@ -43,6 +43,7 @@ export interface SettlementAllocation {
   amountAllocated: number;
   weeksCovered: number;
   yearsCovered: number;
+  weeklyRate?: number; // For manual entries like 34A
 }
 
 export interface BenefitsRemainingOptions {
@@ -55,6 +56,12 @@ export interface BenefitsRemainingOptions {
   selectedBenefitTypes?: string[]; // Array of benefit types to include (e.g., ['34', '35'])
   settlementAmount?: number;
   settlementAllocations?: SettlementAllocation[];
+  section36Amount?: number; // Scarring/disfigurement flat amount
+  manual34A?: {
+    enabled: boolean;
+    weeklyRate: number;
+    amountAllocated: number;
+  };
 }
 
 export interface BenefitsRemainingData {
