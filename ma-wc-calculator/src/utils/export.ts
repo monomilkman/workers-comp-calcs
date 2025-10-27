@@ -201,7 +201,7 @@ export async function generateSettlementStatementPDF(
   // Add logo if available
   try {
     const logoBase64 = await loadImageAsBase64('/JGIL Logo.jpg');
-    const logoDimensions = getLogoDisplayDimensions();
+    const logoDimensions = await getLogoDisplayDimensions('/JGIL Logo.jpg', 50, 30);
     doc.addImage(logoBase64, 'JPEG', 20, yPosition - 5, logoDimensions.width, logoDimensions.height);
   } catch (error) {
     console.warn('Could not load logo for PDF:', error);
@@ -606,7 +606,7 @@ export async function generateBenefitsRemainingPDF(
   // Add logo if available
   try {
     const logoBase64 = await loadImageAsBase64('/JGIL Logo.jpg');
-    const logoDimensions = getLogoDisplayDimensions();
+    const logoDimensions = await getLogoDisplayDimensions('/JGIL Logo.jpg', 50, 30);
     doc.addImage(logoBase64, 'JPEG', 20, yPosition - 5, logoDimensions.width, logoDimensions.height);
     yPosition += logoDimensions.height + 5;
   } catch (error) {
@@ -911,6 +911,123 @@ export async function generateBenefitsRemainingPDF(
     yPosition += 15;
   }
 
+  // Settlement Offer Section
+  if (data.options.includeSettlementOffer && data.options.settlementAmount && data.options.settlementAmount > 0) {
+    // Check if we need a new page
+    if (yPosition > 180) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    // Draw separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, yPosition, 190, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 102, 204);
+    doc.text('Proposed Settlement Analysis', 20, yPosition);
+    doc.setTextColor(0, 0, 0);
+    yPosition += 10;
+
+    doc.setFontSize(11);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Settlement Amount: ${formatCurrency(data.options.settlementAmount)}`, 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 10;
+
+    // Settlement allocations table
+    if (data.options.settlementAllocations && data.options.settlementAllocations.length > 0) {
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Allocation Breakdown:', 20, yPosition);
+      yPosition += 8;
+
+      // Table headers
+      const colX = {
+        benefit: 20,
+        weekly: 65,
+        amount: 100,
+        weeks: 135,
+        years: 165
+      };
+
+      doc.setFontSize(9);
+      doc.setFont('helvetica', 'bold');
+      doc.text('Benefit Type', colX.benefit, yPosition);
+      doc.text('Weekly Rate', colX.weekly, yPosition);
+      doc.text('Allocated', colX.amount, yPosition);
+      doc.text('Weeks', colX.weeks, yPosition);
+      doc.text('Years', colX.years, yPosition);
+      yPosition += 5;
+
+      // Draw header line
+      doc.setDrawColor(150, 150, 150);
+      doc.line(20, yPosition, 190, yPosition);
+      yPosition += 5;
+
+      doc.setFont('helvetica', 'normal');
+      let totalAllocated = 0;
+
+      for (const allocation of data.options.settlementAllocations) {
+        // Check if we need a new page
+        if (yPosition > 270) {
+          doc.addPage();
+          yPosition = 20;
+        }
+
+        const benefit = data.benefitCalculations.find(b => b.type === allocation.type);
+        const benefitName = getBenefitShortName(allocation.type);
+
+        doc.text(benefitName, colX.benefit, yPosition);
+        doc.text(formatCurrency(benefit?.finalWeekly || 0), colX.weekly, yPosition);
+        doc.text(formatCurrency(allocation.amountAllocated), colX.amount, yPosition);
+        doc.text(allocation.weeksCovered.toFixed(2), colX.weeks, yPosition);
+        doc.text(allocation.yearsCovered.toFixed(2), colX.years, yPosition);
+
+        totalAllocated += allocation.amountAllocated;
+        yPosition += 6;
+      }
+
+      // Draw bottom line
+      yPosition += 2;
+      doc.setDrawColor(150, 150, 150);
+      doc.line(20, yPosition, 190, yPosition);
+      yPosition += 6;
+
+      // Total row
+      doc.setFont('helvetica', 'bold');
+      doc.text('Total Allocated:', colX.benefit, yPosition);
+      doc.text(formatCurrency(totalAllocated), colX.amount, yPosition);
+      yPosition += 10;
+
+      // Settlement analysis
+      doc.setFont('helvetica', 'normal');
+      doc.setFontSize(9);
+
+      // Calculate what percentage of remaining benefits this represents
+      const totalRemainingValue = data.remainingEntitlements.reduce((sum, ent) => {
+        if (!ent.isLifeBenefit && ent.dollarsRemaining) {
+          return sum + ent.dollarsRemaining;
+        }
+        return sum;
+      }, 0);
+
+      if (totalRemainingValue > 0) {
+        const percentageOfRemaining = (totalAllocated / totalRemainingValue) * 100;
+        doc.text(
+          `This settlement represents ${percentageOfRemaining.toFixed(1)}% of your remaining finite benefits (${formatCurrency(totalRemainingValue)})`,
+          20,
+          yPosition
+        );
+        yPosition += 6;
+      }
+
+      yPosition += 5;
+    }
+  }
+
   // Custom Notes Section
   if (data.options.customNotes && data.options.customNotes.trim()) {
     // Check if we need a new page
@@ -1046,6 +1163,48 @@ export function generateBenefitsRemainingExcel(
     wsData.push(['TOTAL BENEFITS PAID']);
     wsData.push(['Total Dollars Paid to Date:', formatCurrency(data.totalDollarsPaid)]);
     wsData.push(['']);
+  }
+
+  // Settlement offer
+  if (data.options.includeSettlementOffer && data.options.settlementAmount && data.options.settlementAmount > 0) {
+    wsData.push(['PROPOSED SETTLEMENT ANALYSIS']);
+    wsData.push(['Settlement Amount:', formatCurrency(data.options.settlementAmount)]);
+    wsData.push(['']);
+
+    if (data.options.settlementAllocations && data.options.settlementAllocations.length > 0) {
+      wsData.push(['Allocation Breakdown:']);
+      wsData.push(['Benefit Type', 'Weekly Rate', 'Amount Allocated', 'Weeks Covered', 'Years Covered']);
+
+      let totalAllocated = 0;
+      for (const allocation of data.options.settlementAllocations) {
+        const benefit = data.benefitCalculations.find(b => b.type === allocation.type);
+        wsData.push([
+          getBenefitShortName(allocation.type),
+          formatCurrency(benefit?.finalWeekly || 0),
+          formatCurrency(allocation.amountAllocated),
+          allocation.weeksCovered.toFixed(2),
+          allocation.yearsCovered.toFixed(2)
+        ]);
+        totalAllocated += allocation.amountAllocated;
+      }
+
+      wsData.push(['Total Allocated:', '', formatCurrency(totalAllocated), '', '']);
+      wsData.push(['']);
+
+      // Settlement analysis
+      const totalRemainingValue = data.remainingEntitlements.reduce((sum, ent) => {
+        if (!ent.isLifeBenefit && ent.dollarsRemaining) {
+          return sum + ent.dollarsRemaining;
+        }
+        return sum;
+      }, 0);
+
+      if (totalRemainingValue > 0) {
+        const percentageOfRemaining = (totalAllocated / totalRemainingValue) * 100;
+        wsData.push([`This settlement represents ${percentageOfRemaining.toFixed(1)}% of remaining finite benefits (${formatCurrency(totalRemainingValue)})`]);
+      }
+      wsData.push(['']);
+    }
   }
 
   // Custom notes
@@ -1223,6 +1382,97 @@ export async function generateBenefitsRemainingWord(
         spacing: { after: 200 }
       })
     );
+  }
+
+  // Settlement offer
+  if (data.options.includeSettlementOffer && data.options.settlementAmount && data.options.settlementAmount > 0) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Proposed Settlement Analysis', bold: true, size: 28 })],
+        spacing: { before: 300, after: 200 }
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: `Settlement Amount: ${formatCurrency(data.options.settlementAmount)}`, bold: true })],
+        spacing: { after: 200 }
+      })
+    );
+
+    if (data.options.settlementAllocations && data.options.settlementAllocations.length > 0) {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: 'Allocation Breakdown:', bold: true })],
+          spacing: { before: 100, after: 100 }
+        })
+      );
+
+      // Create table rows for allocations
+      const tableRows: TableRow[] = [
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Benefit Type', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Weekly Rate', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Amount Allocated', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Weeks', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Years', bold: true })] })] })
+          ]
+        })
+      ];
+
+      let totalAllocated = 0;
+      for (const allocation of data.options.settlementAllocations) {
+        const benefit = data.benefitCalculations.find(b => b.type === allocation.type);
+        tableRows.push(
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph(getBenefitShortName(allocation.type))] }),
+              new TableCell({ children: [new Paragraph(formatCurrency(benefit?.finalWeekly || 0))] }),
+              new TableCell({ children: [new Paragraph(formatCurrency(allocation.amountAllocated))] }),
+              new TableCell({ children: [new Paragraph(allocation.weeksCovered.toFixed(2))] }),
+              new TableCell({ children: [new Paragraph(allocation.yearsCovered.toFixed(2))] })
+            ]
+          })
+        );
+        totalAllocated += allocation.amountAllocated;
+      }
+
+      // Total row
+      tableRows.push(
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Total Allocated:', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph('')] }),
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: formatCurrency(totalAllocated), bold: true })] })] }),
+            new TableCell({ children: [new Paragraph('')] }),
+            new TableCell({ children: [new Paragraph('')] })
+          ]
+        })
+      );
+
+      children.push(
+        new Table({
+          rows: tableRows,
+          width: { size: 100, type: WidthType.PERCENTAGE }
+        })
+      );
+
+      // Settlement analysis
+      const totalRemainingValue = data.remainingEntitlements.reduce((sum, ent) => {
+        if (!ent.isLifeBenefit && ent.dollarsRemaining) {
+          return sum + ent.dollarsRemaining;
+        }
+        return sum;
+      }, 0);
+
+      if (totalRemainingValue > 0) {
+        const percentageOfRemaining = (totalAllocated / totalRemainingValue) * 100;
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: `This settlement represents ${percentageOfRemaining.toFixed(1)}% of your remaining finite benefits (${formatCurrency(totalRemainingValue)})` })],
+            spacing: { before: 100, after: 200 }
+          })
+        );
+      }
+    }
   }
 
   // Custom notes

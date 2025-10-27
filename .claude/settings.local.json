@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm test:*)",
+      "Bash(npx vitest:*)",
+      "Bash(npx jest:*)",
+      "Bash(npm install)",
+      "Bash(npm run build:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "Bash(git push)",
+      "Bash(git push:*)",
+      "Bash(dir:*)",
+      "Bash(if exist .githubworkflows dir .githubworkflows else echo No .github/workflows folder at root)",
+      "Bash(npm run update:rates:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

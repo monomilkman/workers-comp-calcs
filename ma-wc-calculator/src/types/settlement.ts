@@ -38,13 +38,23 @@ export interface ClientInfo {
   date: string;
 }
 
+export interface SettlementAllocation {
+  type: string;
+  amountAllocated: number;
+  weeksCovered: number;
+  yearsCovered: number;
+}
+
 export interface BenefitsRemainingOptions {
   includeIndividualBenefits: boolean;
   includeCombinedLimits: boolean;
   includeTotalPaid: boolean;
   includeProgressBars: boolean;
+  includeSettlementOffer: boolean;
   customNotes?: string;
   selectedBenefitTypes?: string[]; // Array of benefit types to include (e.g., ['34', '35'])
+  settlementAmount?: number;
+  settlementAllocations?: SettlementAllocation[];
 }
 
 export interface BenefitsRemainingData {

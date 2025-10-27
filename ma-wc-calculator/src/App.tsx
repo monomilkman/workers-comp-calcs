@@ -228,6 +228,8 @@ function AppContent() {
               combinedUsage={combinedUsage}
               combined35Usage={combined35Usage}
               totalDollarsPaid={totalDollarsPaid}
+              aww={aww}
+              dateOfInjury={dateOfInjury}
             />
 
             <DemandBuilder
