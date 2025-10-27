@@ -2,6 +2,7 @@ import jsPDF from 'jspdf';
 import * as XLSX from 'xlsx';
 import { Document, Packer, Paragraph, TextRun, Table, TableCell, TableRow, WidthType, AlignmentType } from 'docx';
 import type { LedgerEntry, DemandCalculation, AppState } from '../types';
+import type { BenefitsRemainingData } from '../types/settlement';
 import { formatCurrency } from './money';
 import { loadImageAsBase64, getLogoDisplayDimensions } from './logoUtils';
 
@@ -571,4 +572,676 @@ function getBenefitDisplayName(type: string): string {
     default:
       return type;
   }
+}
+
+/**
+ * Get short display name for benefit types
+ */
+function getBenefitShortName(type: string): string {
+  switch (type) {
+    case '34':
+      return 'Section 34 (TTD)';
+    case '35':
+      return 'Section 35 (TPD)';
+    case '35ec':
+      return 'Section 35 EC';
+    case '34A':
+      return 'Section 34A (P&T)';
+    case '31':
+      return 'Section 31';
+    default:
+      return type;
+  }
+}
+
+/**
+ * Generate Benefits Remaining PDF for client presentation
+ */
+export async function generateBenefitsRemainingPDF(
+  data: BenefitsRemainingData
+): Promise<string> {
+  const doc = new jsPDF();
+  let yPosition = 20;
+
+  // Add logo if available
+  try {
+    const logoBase64 = await loadImageAsBase64('/JGIL Logo.jpg');
+    const logoDimensions = getLogoDisplayDimensions();
+    doc.addImage(logoBase64, 'JPEG', 20, yPosition - 5, logoDimensions.width, logoDimensions.height);
+    yPosition += logoDimensions.height + 5;
+  } catch (error) {
+    console.warn('Could not load logo for PDF:', error);
+  }
+
+  // Header
+  doc.setFontSize(20);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Workers\' Compensation Benefits Summary', 105, yPosition, { align: 'center' });
+  yPosition += 15;
+
+  // Client info
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'normal');
+
+  if (data.clientInfo.clientName) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Client:', 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.clientInfo.clientName, 50, yPosition);
+    yPosition += 7;
+  }
+
+  if (data.clientInfo.attorneyName) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Attorney:', 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.clientInfo.attorneyName, 50, yPosition);
+    yPosition += 7;
+  }
+
+  if (data.clientInfo.dateOfInjury) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Date of Injury:', 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    doc.text(data.clientInfo.dateOfInjury, 50, yPosition);
+    yPosition += 7;
+  }
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('Report Date:', 20, yPosition);
+  doc.setFont('helvetica', 'normal');
+  const displayDate = data.clientInfo.date ? new Date(data.clientInfo.date).toLocaleDateString() : new Date().toLocaleDateString();
+  doc.text(displayDate, 50, yPosition);
+  yPosition += 15;
+
+  // Draw a separator line
+  doc.setDrawColor(200, 200, 200);
+  doc.line(20, yPosition, 190, yPosition);
+  yPosition += 10;
+
+  // Individual Benefits Section
+  if (data.options.includeIndividualBenefits) {
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 102, 204); // Blue color
+    doc.text('Your Benefits Breakdown', 20, yPosition);
+    doc.setTextColor(0, 0, 0); // Reset to black
+    yPosition += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+
+    // Filter benefits based on selectedBenefitTypes if specified
+    const benefitsToShow = data.remainingEntitlements.filter(entitlement => {
+      if (data.options.selectedBenefitTypes && data.options.selectedBenefitTypes.length > 0) {
+        return data.options.selectedBenefitTypes.includes(entitlement.type);
+      }
+      return true;
+    });
+
+    for (const entitlement of benefitsToShow) {
+      const benefit = data.benefitCalculations.find(b => b.type === entitlement.type);
+      if (!benefit) continue;
+
+      // Check if we need a new page
+      if (yPosition > 250) {
+        doc.addPage();
+        yPosition = 20;
+      }
+
+      // Benefit type header
+      doc.setFontSize(12);
+      doc.setFont('helvetica', 'bold');
+      doc.text(getBenefitShortName(entitlement.type), 20, yPosition);
+      yPosition += 7;
+
+      doc.setFontSize(10);
+      doc.setFont('helvetica', 'normal');
+
+      // Weekly rate
+      doc.text(`Weekly Rate: ${formatCurrency(benefit.finalWeekly)}`, 25, yPosition);
+      yPosition += 6;
+
+      if (entitlement.isLifeBenefit) {
+        // Life benefit
+        doc.text(`Weeks Used: ${entitlement.weeksUsed.toFixed(2)}`, 25, yPosition);
+        yPosition += 6;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 128, 0); // Green
+        doc.text('Status: Life Benefit (No Statutory Limit)', 25, yPosition);
+        doc.setTextColor(0, 0, 0); // Reset
+        doc.setFont('helvetica', 'normal');
+        yPosition += 8;
+      } else {
+        // Finite benefit
+        doc.text(`Maximum Weeks: ${entitlement.statutoryMaxWeeks}`, 25, yPosition);
+        yPosition += 6;
+        doc.text(`Weeks Used: ${entitlement.weeksUsed.toFixed(2)}`, 25, yPosition);
+        yPosition += 6;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(0, 128, 0); // Green
+        doc.text(`Weeks Remaining: ${entitlement.weeksRemaining?.toFixed(2) || '0.00'}`, 25, yPosition);
+        doc.setTextColor(0, 0, 0); // Reset
+        doc.setFont('helvetica', 'normal');
+        yPosition += 6;
+
+        if (entitlement.dollarsRemaining !== null) {
+          doc.setFont('helvetica', 'bold');
+          doc.setFontSize(11);
+          doc.setTextColor(0, 102, 0); // Dark green
+          doc.text(`Dollar Value Remaining: ${formatCurrency(entitlement.dollarsRemaining)}`, 25, yPosition);
+          doc.setTextColor(0, 0, 0); // Reset
+          doc.setFont('helvetica', 'normal');
+          doc.setFontSize(10);
+          yPosition += 8;
+        }
+
+        // Progress bar
+        if (data.options.includeProgressBars && entitlement.statutoryMaxWeeks) {
+          const progressPercent = (entitlement.weeksUsed / entitlement.statutoryMaxWeeks) * 100;
+          const barWidth = 150;
+          const barHeight = 8;
+          const barX = 25;
+          const barY = yPosition;
+
+          // Background (gray)
+          doc.setFillColor(220, 220, 220);
+          doc.rect(barX, barY, barWidth, barHeight, 'F');
+
+          // Progress fill (color based on usage)
+          const fillWidth = (barWidth * progressPercent) / 100;
+          if (progressPercent >= 90) {
+            doc.setFillColor(220, 38, 38); // Red
+          } else if (progressPercent >= 70) {
+            doc.setFillColor(234, 179, 8); // Yellow
+          } else {
+            doc.setFillColor(34, 197, 94); // Green
+          }
+          doc.rect(barX, barY, fillWidth, barHeight, 'F');
+
+          // Progress text
+          doc.setFontSize(9);
+          doc.text(`${progressPercent.toFixed(1)}% Used`, barX + barWidth + 5, barY + 6);
+          yPosition += 12;
+        }
+      }
+
+      yPosition += 5;
+    }
+  }
+
+  // Combined Limits Section
+  if (data.options.includeCombinedLimits) {
+    // Check if we need a new page
+    if (yPosition > 220) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    // Draw separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, yPosition, 190, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 102, 204); // Blue color
+    doc.text('Combined Benefit Limits', 20, yPosition);
+    doc.setTextColor(0, 0, 0); // Reset
+    yPosition += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+
+    // Combined 34 + 35 (7-year cap)
+    doc.setFont('helvetica', 'bold');
+    doc.text('Combined Sections 34 + 35 (7-Year Cap)', 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 7;
+
+    doc.text(`Maximum: ${data.combinedUsage.maxWeeks} weeks`, 25, yPosition);
+    yPosition += 6;
+    doc.text(`Used: ${data.combinedUsage.weeksUsed.toFixed(2)} weeks`, 25, yPosition);
+    yPosition += 6;
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 128, 0);
+    doc.text(`Remaining: ${data.combinedUsage.weeksRemaining.toFixed(2)} weeks`, 25, yPosition);
+    doc.setTextColor(0, 0, 0);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 8;
+
+    // Progress bar for combined 34+35
+    if (data.options.includeProgressBars) {
+      const combinedProgress = (data.combinedUsage.weeksUsed / data.combinedUsage.maxWeeks) * 100;
+      const barWidth = 150;
+      const barHeight = 8;
+      const barX = 25;
+      const barY = yPosition;
+
+      doc.setFillColor(220, 220, 220);
+      doc.rect(barX, barY, barWidth, barHeight, 'F');
+
+      const fillWidth = (barWidth * combinedProgress) / 100;
+      if (combinedProgress >= 90) {
+        doc.setFillColor(220, 38, 38);
+      } else if (combinedProgress >= 70) {
+        doc.setFillColor(234, 179, 8);
+      } else {
+        doc.setFillColor(34, 197, 94);
+      }
+      doc.rect(barX, barY, fillWidth, barHeight, 'F');
+
+      doc.setFontSize(9);
+      doc.text(`${combinedProgress.toFixed(1)}% Used`, barX + barWidth + 5, barY + 6);
+      yPosition += 12;
+    }
+
+    yPosition += 5;
+
+    // Combined 35 + 35EC (4-year cap) if applicable
+    if (data.combined35Usage.weeksUsed > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('Combined Sections 35 + 35EC (4-Year Cap)', 20, yPosition);
+      doc.setFont('helvetica', 'normal');
+      yPosition += 7;
+
+      doc.text(`Maximum: ${data.combined35Usage.maxWeeks} weeks`, 25, yPosition);
+      yPosition += 6;
+      doc.text(`Used: ${data.combined35Usage.weeksUsed.toFixed(2)} weeks`, 25, yPosition);
+      yPosition += 6;
+      doc.setFont('helvetica', 'bold');
+      doc.setTextColor(0, 128, 0);
+      doc.text(`Remaining: ${data.combined35Usage.weeksRemaining.toFixed(2)} weeks`, 25, yPosition);
+      doc.setTextColor(0, 0, 0);
+      doc.setFont('helvetica', 'normal');
+      yPosition += 8;
+
+      // Progress bar for combined 35+35EC
+      if (data.options.includeProgressBars) {
+        const combined35Progress = (data.combined35Usage.weeksUsed / data.combined35Usage.maxWeeks) * 100;
+        const barWidth = 150;
+        const barHeight = 8;
+        const barX = 25;
+        const barY = yPosition;
+
+        doc.setFillColor(220, 220, 220);
+        doc.rect(barX, barY, barWidth, barHeight, 'F');
+
+        const fillWidth = (barWidth * combined35Progress) / 100;
+        if (combined35Progress >= 90) {
+          doc.setFillColor(220, 38, 38);
+        } else if (combined35Progress >= 70) {
+          doc.setFillColor(234, 179, 8);
+        } else {
+          doc.setFillColor(34, 197, 94);
+        }
+        doc.rect(barX, barY, fillWidth, barHeight, 'F');
+
+        doc.setFontSize(9);
+        doc.text(`${combined35Progress.toFixed(1)}% Used`, barX + barWidth + 5, barY + 6);
+        yPosition += 12;
+      }
+    }
+  }
+
+  // Total Paid Section
+  if (data.options.includeTotalPaid) {
+    // Check if we need a new page
+    if (yPosition > 240) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    // Draw separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, yPosition, 190, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 102, 204);
+    doc.text('Total Benefits Paid', 20, yPosition);
+    doc.setTextColor(0, 0, 0);
+    yPosition += 10;
+
+    doc.setFontSize(12);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`Total Dollars Paid to Date: ${formatCurrency(data.totalDollarsPaid)}`, 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 15;
+  }
+
+  // Custom Notes Section
+  if (data.options.customNotes && data.options.customNotes.trim()) {
+    // Check if we need a new page
+    if (yPosition > 230) {
+      doc.addPage();
+      yPosition = 20;
+    }
+
+    // Draw separator
+    doc.setDrawColor(200, 200, 200);
+    doc.line(20, yPosition, 190, yPosition);
+    yPosition += 10;
+
+    doc.setFontSize(14);
+    doc.setFont('helvetica', 'bold');
+    doc.setTextColor(0, 102, 204);
+    doc.text('Attorney Notes', 20, yPosition);
+    doc.setTextColor(0, 0, 0);
+    yPosition += 10;
+
+    doc.setFontSize(10);
+    doc.setFont('helvetica', 'normal');
+
+    // Split long text into multiple lines
+    const maxWidth = 170;
+    const lines = doc.splitTextToSize(data.options.customNotes, maxWidth);
+
+    for (const line of lines) {
+      if (yPosition > 280) {
+        doc.addPage();
+        yPosition = 20;
+      }
+      doc.text(line, 20, yPosition);
+      yPosition += 6;
+    }
+  }
+
+  // Footer
+  const pageCount = doc.internal.pages.length - 1; // Subtract 1 because first element is null
+  for (let i = 1; i <= pageCount; i++) {
+    doc.setPage(i);
+    doc.setFontSize(8);
+    doc.setFont('helvetica', 'normal');
+    doc.setTextColor(128, 128, 128);
+    doc.text(
+      `Generated by MA WC Benefits Calculator - ${new Date().toLocaleDateString()} - Page ${i} of ${pageCount}`,
+      105,
+      285,
+      { align: 'center' }
+    );
+  }
+
+  return doc.output('datauristring');
+}
+
+/**
+ * Generate Benefits Remaining Excel file
+ */
+export function generateBenefitsRemainingExcel(
+  data: BenefitsRemainingData
+): Blob {
+  const wb = XLSX.utils.book_new();
+
+  const wsData = [
+    ['Workers\' Compensation Benefits Summary'],
+    [''],
+    ['Client:', data.clientInfo.clientName || ''],
+    ['Attorney:', data.clientInfo.attorneyName || ''],
+    ['Date of Injury:', data.clientInfo.dateOfInjury || ''],
+    ['Report Date:', data.clientInfo.date || new Date().toLocaleDateString()],
+    [''],
+  ];
+
+  // Individual benefits
+  if (data.options.includeIndividualBenefits) {
+    wsData.push(['YOUR BENEFITS BREAKDOWN']);
+    wsData.push(['']);
+
+    const benefitsToShow = data.remainingEntitlements.filter(entitlement => {
+      if (data.options.selectedBenefitTypes && data.options.selectedBenefitTypes.length > 0) {
+        return data.options.selectedBenefitTypes.includes(entitlement.type);
+      }
+      return true;
+    });
+
+    for (const entitlement of benefitsToShow) {
+      const benefit = data.benefitCalculations.find(b => b.type === entitlement.type);
+      if (!benefit) continue;
+
+      wsData.push([getBenefitShortName(entitlement.type)]);
+      wsData.push(['Weekly Rate:', formatCurrency(benefit.finalWeekly)]);
+
+      if (entitlement.isLifeBenefit) {
+        wsData.push(['Weeks Used:', entitlement.weeksUsed.toFixed(2)]);
+        wsData.push(['Status:', 'Life Benefit (No Statutory Limit)']);
+      } else {
+        wsData.push(['Maximum Weeks:', entitlement.statutoryMaxWeeks?.toString() || 'N/A']);
+        wsData.push(['Weeks Used:', entitlement.weeksUsed.toFixed(2)]);
+        wsData.push(['Weeks Remaining:', entitlement.weeksRemaining?.toFixed(2) || '0.00']);
+        if (entitlement.dollarsRemaining !== null) {
+          wsData.push(['Dollar Value Remaining:', formatCurrency(entitlement.dollarsRemaining)]);
+        }
+        const progressPercent = entitlement.statutoryMaxWeeks
+          ? ((entitlement.weeksUsed / entitlement.statutoryMaxWeeks) * 100).toFixed(1)
+          : '0';
+        wsData.push(['Usage:', `${progressPercent}%`]);
+      }
+      wsData.push(['']);
+    }
+  }
+
+  // Combined limits
+  if (data.options.includeCombinedLimits) {
+    wsData.push(['COMBINED BENEFIT LIMITS']);
+    wsData.push(['']);
+    wsData.push(['Combined Sections 34 + 35 (7-Year Cap)']);
+    wsData.push(['Maximum:', `${data.combinedUsage.maxWeeks} weeks`]);
+    wsData.push(['Used:', `${data.combinedUsage.weeksUsed.toFixed(2)} weeks`]);
+    wsData.push(['Remaining:', `${data.combinedUsage.weeksRemaining.toFixed(2)} weeks`]);
+    wsData.push(['']);
+
+    if (data.combined35Usage.weeksUsed > 0) {
+      wsData.push(['Combined Sections 35 + 35EC (4-Year Cap)']);
+      wsData.push(['Maximum:', `${data.combined35Usage.maxWeeks} weeks`]);
+      wsData.push(['Used:', `${data.combined35Usage.weeksUsed.toFixed(2)} weeks`]);
+      wsData.push(['Remaining:', `${data.combined35Usage.weeksRemaining.toFixed(2)} weeks`]);
+      wsData.push(['']);
+    }
+  }
+
+  // Total paid
+  if (data.options.includeTotalPaid) {
+    wsData.push(['TOTAL BENEFITS PAID']);
+    wsData.push(['Total Dollars Paid to Date:', formatCurrency(data.totalDollarsPaid)]);
+    wsData.push(['']);
+  }
+
+  // Custom notes
+  if (data.options.customNotes && data.options.customNotes.trim()) {
+    wsData.push(['ATTORNEY NOTES']);
+    wsData.push([data.options.customNotes]);
+  }
+
+  const ws = XLSX.utils.aoa_to_sheet(wsData);
+  XLSX.utils.book_append_sheet(wb, ws, 'Benefits Summary');
+
+  const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+  return new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+}
+
+/**
+ * Generate Benefits Remaining Word document
+ */
+export async function generateBenefitsRemainingWord(
+  data: BenefitsRemainingData
+): Promise<Blob> {
+  const children: any[] = [
+    new Paragraph({
+      children: [new TextRun({ text: 'Workers\' Compensation Benefits Summary', bold: true, size: 32 })],
+      alignment: AlignmentType.CENTER,
+      spacing: { after: 400 }
+    })
+  ];
+
+  // Client info
+  const infoRows = [
+    [`Client: ${data.clientInfo.clientName || ''}`],
+    [`Attorney: ${data.clientInfo.attorneyName || ''}`],
+    [`Date of Injury: ${data.clientInfo.dateOfInjury || ''}`],
+    [`Report Date: ${data.clientInfo.date || new Date().toLocaleDateString()}`]
+  ];
+
+  children.push(
+    ...infoRows.map(row => new Paragraph({
+      children: [new TextRun({ text: row[0] })],
+      spacing: { after: 100 }
+    })),
+    new Paragraph({
+      children: [new TextRun({ text: '', size: 20 })],
+      spacing: { before: 200, after: 200 }
+    })
+  );
+
+  // Individual benefits
+  if (data.options.includeIndividualBenefits) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Your Benefits Breakdown', bold: true, size: 28 })],
+        spacing: { before: 200, after: 200 }
+      })
+    );
+
+    const benefitsToShow = data.remainingEntitlements.filter(entitlement => {
+      if (data.options.selectedBenefitTypes && data.options.selectedBenefitTypes.length > 0) {
+        return data.options.selectedBenefitTypes.includes(entitlement.type);
+      }
+      return true;
+    });
+
+    for (const entitlement of benefitsToShow) {
+      const benefit = data.benefitCalculations.find(b => b.type === entitlement.type);
+      if (!benefit) continue;
+
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: getBenefitShortName(entitlement.type), bold: true, size: 24 })],
+          spacing: { before: 200, after: 100 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `Weekly Rate: ${formatCurrency(benefit.finalWeekly)}` })],
+          spacing: { after: 50 }
+        })
+      );
+
+      if (entitlement.isLifeBenefit) {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: `Weeks Used: ${entitlement.weeksUsed.toFixed(2)}` })],
+            spacing: { after: 50 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: 'Status: Life Benefit (No Statutory Limit)', bold: true })],
+            spacing: { after: 100 }
+          })
+        );
+      } else {
+        children.push(
+          new Paragraph({
+            children: [new TextRun({ text: `Maximum Weeks: ${entitlement.statutoryMaxWeeks}` })],
+            spacing: { after: 50 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Weeks Used: ${entitlement.weeksUsed.toFixed(2)}` })],
+            spacing: { after: 50 }
+          }),
+          new Paragraph({
+            children: [new TextRun({ text: `Weeks Remaining: ${entitlement.weeksRemaining?.toFixed(2) || '0.00'}`, bold: true })],
+            spacing: { after: 50 }
+          })
+        );
+
+        if (entitlement.dollarsRemaining !== null) {
+          children.push(
+            new Paragraph({
+              children: [new TextRun({ text: `Dollar Value Remaining: ${formatCurrency(entitlement.dollarsRemaining)}`, bold: true })],
+              spacing: { after: 100 }
+            })
+          );
+        }
+      }
+    }
+  }
+
+  // Combined limits
+  if (data.options.includeCombinedLimits) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Combined Benefit Limits', bold: true, size: 28 })],
+        spacing: { before: 300, after: 200 }
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: 'Combined Sections 34 + 35 (7-Year Cap)', bold: true })],
+        spacing: { after: 100 }
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: `Maximum: ${data.combinedUsage.maxWeeks} weeks` })],
+        spacing: { after: 50 }
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: `Used: ${data.combinedUsage.weeksUsed.toFixed(2)} weeks` })],
+        spacing: { after: 50 }
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: `Remaining: ${data.combinedUsage.weeksRemaining.toFixed(2)} weeks`, bold: true })],
+        spacing: { after: 200 }
+      })
+    );
+
+    if (data.combined35Usage.weeksUsed > 0) {
+      children.push(
+        new Paragraph({
+          children: [new TextRun({ text: 'Combined Sections 35 + 35EC (4-Year Cap)', bold: true })],
+          spacing: { after: 100 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `Maximum: ${data.combined35Usage.maxWeeks} weeks` })],
+          spacing: { after: 50 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `Used: ${data.combined35Usage.weeksUsed.toFixed(2)} weeks` })],
+          spacing: { after: 50 }
+        }),
+        new Paragraph({
+          children: [new TextRun({ text: `Remaining: ${data.combined35Usage.weeksRemaining.toFixed(2)} weeks`, bold: true })],
+          spacing: { after: 200 }
+        })
+      );
+    }
+  }
+
+  // Total paid
+  if (data.options.includeTotalPaid) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Total Benefits Paid', bold: true, size: 28 })],
+        spacing: { before: 300, after: 200 }
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: `Total Dollars Paid to Date: ${formatCurrency(data.totalDollarsPaid)}`, bold: true })],
+        spacing: { after: 200 }
+      })
+    );
+  }
+
+  // Custom notes
+  if (data.options.customNotes && data.options.customNotes.trim()) {
+    children.push(
+      new Paragraph({
+        children: [new TextRun({ text: 'Attorney Notes', bold: true, size: 28 })],
+        spacing: { before: 300, after: 200 }
+      }),
+      new Paragraph({
+        children: [new TextRun({ text: data.options.customNotes })],
+        spacing: { after: 200 }
+      })
+    );
+  }
+
+  const doc = new Document({
+    sections: [{ children }]
+  });
+
+  return await Packer.toBlob(doc);
 }

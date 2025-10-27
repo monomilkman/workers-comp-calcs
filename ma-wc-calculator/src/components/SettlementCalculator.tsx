@@ -1,12 +1,24 @@
 import { useState, useMemo } from 'react';
 import { formatCurrency, parseCurrency } from '../utils/money';
-import { generateSettlementStatementPDF, generateSettlementStatementExcel, generateSettlementStatementWord, downloadBlob } from '../utils/export';
-import { Plus, Trash2, Download, Calculator, FileText, File } from 'lucide-react';
+import { generateSettlementStatementPDF, generateSettlementStatementExcel, generateSettlementStatementWord, generateBenefitsRemainingPDF, generateBenefitsRemainingExcel, generateBenefitsRemainingWord, downloadBlob } from '../utils/export';
+import { Plus, Trash2, Download, Calculator, FileText, File, FileSpreadsheet, Info } from 'lucide-react';
 import type { BenefitCalculation, RemainingEntitlement } from '../types';
+import type { BenefitsRemainingOptions, BenefitsRemainingData } from '../types/settlement';
 
 interface SettlementCalculatorProps {
   benefitCalculations: BenefitCalculation[];
   remainingEntitlements: RemainingEntitlement[];
+  combinedUsage?: {
+    weeksUsed: number;
+    weeksRemaining: number;
+    maxWeeks: number;
+  };
+  combined35Usage?: {
+    weeksUsed: number;
+    weeksRemaining: number;
+    maxWeeks: number;
+  };
+  totalDollarsPaid?: number;
 }
 
 interface SettlementBreakdown {
@@ -34,9 +46,12 @@ interface ClientInfo {
 
 type LiabilityType = 'accepted' | 'unaccepted';
 
-export function SettlementCalculator({ 
-  benefitCalculations, 
-  remainingEntitlements 
+export function SettlementCalculator({
+  benefitCalculations,
+  remainingEntitlements,
+  combinedUsage = { weeksUsed: 0, weeksRemaining: 0, maxWeeks: 364 },
+  combined35Usage = { weeksUsed: 0, weeksRemaining: 0, maxWeeks: 208 },
+  totalDollarsPaid = 0
 }: SettlementCalculatorProps) {
   const [proposedAmount, setProposedAmount] = useState<number>(0);
   const [proposedInput, setProposedInput] = useState<string>('');
@@ -52,6 +67,17 @@ export function SettlementCalculator({
     clientName: '',
     dateOfInjury: '',
     date: new Date().toISOString().split('T')[0]
+  });
+
+  // Benefits Remaining Sheet state
+  const [showBenefitsModal, setShowBenefitsModal] = useState<boolean>(false);
+  const [benefitsOptions, setBenefitsOptions] = useState<BenefitsRemainingOptions>({
+    includeIndividualBenefits: true,
+    includeCombinedLimits: true,
+    includeTotalPaid: true,
+    includeProgressBars: true,
+    customNotes: '',
+    selectedBenefitTypes: []
   });
 
   const getBenefitTitle = (type: string) => {
@@ -260,6 +286,89 @@ export function SettlementCalculator({
     return remainingEntitlements
       .filter(e => !e.isLifeBenefit && e.dollarsRemaining)
       .reduce((sum, e) => sum + (e.dollarsRemaining || 0), 0);
+  };
+
+  // Benefits Remaining Sheet handlers
+  const handleToggleBenefitType = (type: string) => {
+    setBenefitsOptions(prev => {
+      const currentTypes = prev.selectedBenefitTypes || [];
+      const isSelected = currentTypes.includes(type);
+
+      return {
+        ...prev,
+        selectedBenefitTypes: isSelected
+          ? currentTypes.filter(t => t !== type)
+          : [...currentTypes, type]
+      };
+    });
+  };
+
+  const getBenefitsRemainingData = (): BenefitsRemainingData => ({
+    clientInfo: {
+      attorneyName: clientInfo.attorneyName,
+      clientName: clientInfo.clientName,
+      dateOfInjury: clientInfo.dateOfInjury,
+      date: clientInfo.date
+    },
+    benefitCalculations: benefitCalculations.map(b => ({
+      type: b.type,
+      rawWeekly: b.rawWeekly,
+      finalWeekly: b.finalWeekly
+    })),
+    remainingEntitlements: remainingEntitlements.map(e => ({
+      type: e.type,
+      statutoryMaxWeeks: e.statutoryMaxWeeks,
+      weeksUsed: e.weeksUsed,
+      weeksRemaining: e.weeksRemaining,
+      dollarsRemaining: e.dollarsRemaining,
+      isLifeBenefit: e.isLifeBenefit
+    })),
+    combinedUsage,
+    combined35Usage,
+    totalDollarsPaid,
+    options: benefitsOptions
+  });
+
+  const handleDownloadBenefitsPDF = async () => {
+    try {
+      const data = getBenefitsRemainingData();
+      const pdfDataUri = await generateBenefitsRemainingPDF(data);
+
+      const link = document.createElement('a');
+      link.href = pdfDataUri;
+      const fileName = `benefits-remaining-${clientInfo.clientName || 'client'}-${new Date().toISOString().split('T')[0]}.pdf`;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error('Error generating Benefits Remaining PDF:', error);
+      alert('Error generating PDF. Please try again.');
+    }
+  };
+
+  const handleDownloadBenefitsExcel = () => {
+    try {
+      const data = getBenefitsRemainingData();
+      const excelBlob = generateBenefitsRemainingExcel(data);
+      const fileName = `benefits-remaining-${clientInfo.clientName || 'client'}-${new Date().toISOString().split('T')[0]}.xlsx`;
+      downloadBlob(excelBlob, fileName);
+    } catch (error) {
+      console.error('Error generating Benefits Remaining Excel:', error);
+      alert('Error generating Excel file. Please try again.');
+    }
+  };
+
+  const handleDownloadBenefitsWord = async () => {
+    try {
+      const data = getBenefitsRemainingData();
+      const wordBlob = await generateBenefitsRemainingWord(data);
+      const fileName = `benefits-remaining-${clientInfo.clientName || 'client'}-${new Date().toISOString().split('T')[0]}.docx`;
+      downloadBlob(wordBlob, fileName);
+    } catch (error) {
+      console.error('Error generating Benefits Remaining Word:', error);
+      alert('Error generating Word document. Please try again.');
+    }
   };
 
   return (
@@ -699,6 +808,171 @@ export function SettlementCalculator({
           </div>
         </div>
       )}
+
+      {/* Benefits Remaining Sheet Section */}
+      <div className="card">
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 flex items-center gap-2">
+              <FileSpreadsheet className="h-5 w-5 text-green-600 dark:text-green-400" />
+              Client Benefits Summary Sheet
+            </h3>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Generate a customizable document showing remaining benefits for client presentations
+            </p>
+          </div>
+          <button
+            onClick={() => setShowBenefitsModal(!showBenefitsModal)}
+            className="btn-primary flex items-center space-x-2"
+          >
+            <FileSpreadsheet className="h-4 w-4" />
+            <span>{showBenefitsModal ? 'Hide Options' : 'Generate Sheet'}</span>
+          </button>
+        </div>
+
+        {showBenefitsModal && (
+          <div className="mt-6 p-6 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg space-y-6">
+            {/* Info Box */}
+            <div className="flex items-start gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+              <Info className="h-5 w-5 text-blue-600 dark:text-blue-400 mt-0.5 flex-shrink-0" />
+              <div className="text-sm text-blue-700 dark:text-blue-300">
+                <p className="font-semibold mb-1">Purpose</p>
+                <p>
+                  This sheet helps you explain to clients what benefits they have remaining, making it easier to discuss settlement options and why a particular settlement amount makes sense for their case.
+                </p>
+              </div>
+            </div>
+
+            {/* Customization Options */}
+            <div className="space-y-4">
+              <h4 className="font-semibold text-gray-900 dark:text-gray-100">What to Include</h4>
+
+              {/* Main Sections */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <label className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <input
+                    type="checkbox"
+                    checked={benefitsOptions.includeIndividualBenefits}
+                    onChange={(e) => setBenefitsOptions(prev => ({ ...prev, includeIndividualBenefits: e.target.checked }))}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Individual Benefits Breakdown</span>
+                </label>
+
+                <label className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <input
+                    type="checkbox"
+                    checked={benefitsOptions.includeCombinedLimits}
+                    onChange={(e) => setBenefitsOptions(prev => ({ ...prev, includeCombinedLimits: e.target.checked }))}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Combined Benefit Limits</span>
+                </label>
+
+                <label className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <input
+                    type="checkbox"
+                    checked={benefitsOptions.includeTotalPaid}
+                    onChange={(e) => setBenefitsOptions(prev => ({ ...prev, includeTotalPaid: e.target.checked }))}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Total Dollars Paid</span>
+                </label>
+
+                <label className="flex items-center space-x-3 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <input
+                    type="checkbox"
+                    checked={benefitsOptions.includeProgressBars}
+                    onChange={(e) => setBenefitsOptions(prev => ({ ...prev, includeProgressBars: e.target.checked }))}
+                    className="h-4 w-4"
+                  />
+                  <span className="text-sm font-medium text-gray-900 dark:text-gray-100">Visual Progress Bars</span>
+                </label>
+              </div>
+
+              {/* Benefit Type Selection */}
+              {benefitsOptions.includeIndividualBenefits && (
+                <div className="space-y-3">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Select Specific Benefits (leave all unchecked to include all)
+                  </p>
+                  <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+                    {remainingEntitlements.map(entitlement => (
+                      <label
+                        key={entitlement.type}
+                        className="flex items-center space-x-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700/50"
+                      >
+                        <input
+                          type="checkbox"
+                          checked={benefitsOptions.selectedBenefitTypes?.includes(entitlement.type) || false}
+                          onChange={() => handleToggleBenefitType(entitlement.type)}
+                          className="h-4 w-4"
+                        />
+                        <span className="text-xs font-medium text-gray-900 dark:text-gray-100">
+                          {getBenefitTitle(entitlement.type)}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Custom Notes */}
+              <div className="space-y-2">
+                <label htmlFor="benefits-custom-notes" className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Attorney Notes (Optional)
+                </label>
+                <textarea
+                  id="benefits-custom-notes"
+                  value={benefitsOptions.customNotes}
+                  onChange={(e) => setBenefitsOptions(prev => ({ ...prev, customNotes: e.target.value }))}
+                  className="w-full"
+                  rows={4}
+                  placeholder="Add any explanations or context for the client about their benefits, settlement recommendations, or next steps..."
+                />
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  This text will appear at the end of the document to help explain the benefits to your client.
+                </p>
+              </div>
+            </div>
+
+            {/* Download Buttons */}
+            <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ready to Generate</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">
+                    Choose your preferred format below
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    onClick={handleDownloadBenefitsPDF}
+                    className="btn-primary flex items-center space-x-2"
+                  >
+                    <Download className="h-4 w-4" />
+                    <span>PDF</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadBenefitsExcel}
+                    className="btn-secondary flex items-center space-x-2"
+                  >
+                    <FileText className="h-4 w-4" />
+                    <span>Excel</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadBenefitsWord}
+                    className="btn-secondary flex items-center space-x-2"
+                  >
+                    <File className="h-4 w-4" />
+                    <span>Word</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -225,13 +225,16 @@ function AppContent() {
             <SettlementCalculator
               benefitCalculations={benefitCalculations}
               remainingEntitlements={remainingEntitlements}
+              combinedUsage={combinedUsage}
+              combined35Usage={combined35Usage}
+              totalDollarsPaid={totalDollarsPaid}
             />
-            
+
             <DemandBuilder
               benefitCalculations={benefitCalculations}
               remainingEntitlements={remainingEntitlements}
             />
-            
+
             <div className="mt-8">
               <ExportButtons
                 appState={appState}
