@@ -45,6 +45,8 @@ export interface SettlementAllocation {
   yearsCovered: number;
   weeklyRate?: number; // For manual entries like 34A
   inputMode?: 'years' | 'dollars'; // Track which input method is being used
+  yearInput?: string; // Store raw input to prevent formatting interference
+  dollarInput?: string; // Store raw input to prevent formatting interference
 }
 
 export interface BenefitsRemainingOptions {
@@ -58,11 +60,6 @@ export interface BenefitsRemainingOptions {
   settlementAmount?: number;
   settlementAllocations?: SettlementAllocation[];
   section36Amount?: number; // Scarring/disfigurement flat amount
-  manual34A?: {
-    enabled: boolean;
-    weeklyRate: number;
-    amountAllocated: number;
-  };
 }
 
 export interface BenefitsRemainingData {

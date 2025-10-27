@@ -85,12 +85,7 @@ export function SettlementCalculator({
     selectedBenefitTypes: [],
     settlementAmount: 0,
     settlementAllocations: [],
-    section36Amount: 0,
-    manual34A: {
-      enabled: false,
-      weeklyRate: 0,
-      amountAllocated: 0
-    }
+    section36Amount: 0
   });
 
   const getBenefitTitle = (type: string) => {
@@ -407,7 +402,9 @@ export function SettlementCalculator({
           weeksCovered: 0,
           yearsCovered: 0,
           weeklyRate: benefit.finalWeekly,
-          inputMode: 'years' as const
+          inputMode: 'years' as const,
+          yearInput: '',
+          dollarInput: ''
         }
       ]
     }));
@@ -420,10 +417,11 @@ export function SettlementCalculator({
     }));
   };
 
-  const handleAllocationYearsChange = (type: string, years: number) => {
+  const handleAllocationYearsChange = (type: string, inputValue: string) => {
     const benefit = benefitCalculations.find(b => b.type === type);
     if (!benefit || benefit.finalWeekly === 0) return;
 
+    const years = inputValue === '' ? 0 : parseFloat(inputValue) || 0;
     const weeksCovered = years * 52;
     const amountAllocated = weeksCovered * benefit.finalWeekly;
 
@@ -431,16 +429,25 @@ export function SettlementCalculator({
       ...prev,
       settlementAllocations: prev.settlementAllocations?.map(alloc =>
         alloc.type === type
-          ? { ...alloc, yearsCovered: years, weeksCovered, amountAllocated, inputMode: 'years' as const }
+          ? {
+              ...alloc,
+              yearsCovered: years,
+              weeksCovered,
+              amountAllocated,
+              inputMode: 'years' as const,
+              yearInput: inputValue,
+              dollarInput: amountAllocated > 0 ? amountAllocated.toFixed(2) : ''
+            }
           : alloc
       ) || []
     }));
   };
 
-  const handleAllocationDollarsChange = (type: string, dollars: number) => {
+  const handleAllocationDollarsChange = (type: string, inputValue: string) => {
     const benefit = benefitCalculations.find(b => b.type === type);
     if (!benefit || benefit.finalWeekly === 0) return;
 
+    const dollars = parseCurrency(inputValue);
     const weeksCovered = dollars / benefit.finalWeekly;
     const yearsCovered = weeksCovered / 52;
 
@@ -448,7 +455,15 @@ export function SettlementCalculator({
       ...prev,
       settlementAllocations: prev.settlementAllocations?.map(alloc =>
         alloc.type === type
-          ? { ...alloc, amountAllocated: dollars, weeksCovered, yearsCovered, inputMode: 'dollars' as const }
+          ? {
+              ...alloc,
+              amountAllocated: dollars,
+              weeksCovered,
+              yearsCovered,
+              inputMode: 'dollars' as const,
+              dollarInput: inputValue,
+              yearInput: yearsCovered > 0 ? yearsCovered.toFixed(2) : ''
+            }
           : alloc
       ) || []
     }));
@@ -467,51 +482,47 @@ export function SettlementCalculator({
     }));
   };
 
-  const handleManual34AToggle = (enabled: boolean) => {
+  const handleFillRemaining = (benefitType: string) => {
+    const entitlement = remainingEntitlements.find(e => e.type === benefitType);
+    const benefit = benefitCalculations.find(b => b.type === benefitType);
+
+    if (!entitlement || !benefit || benefit.finalWeekly === 0) return;
+
+    // Can't fill remaining for life benefits or benefits with no remaining weeks
+    if (entitlement.isLifeBenefit ||
+        entitlement.weeksRemaining === null ||
+        entitlement.weeksRemaining <= 0 ||
+        entitlement.dollarsRemaining === null) {
+      return;
+    }
+
+    const years = entitlement.weeksRemaining / 52;
+    const amountAllocated = entitlement.dollarsRemaining;
+
     setBenefitsOptions(prev => ({
       ...prev,
-      manual34A: {
-        ...prev.manual34A!,
-        enabled
-      }
+      settlementAllocations: prev.settlementAllocations?.map(alloc =>
+        alloc.type === benefitType
+          ? {
+              ...alloc,
+              yearsCovered: years,
+              weeksCovered: entitlement.weeksRemaining as number,
+              amountAllocated,
+              inputMode: 'years' as const,
+              yearInput: years.toFixed(2),
+              dollarInput: amountAllocated.toFixed(2)
+            }
+          : alloc
+      ) || []
     }));
-  };
-
-  const handleManual34AWeeklyRateChange = (rate: number) => {
-    setBenefitsOptions(prev => {
-      const amount = prev.manual34A?.amountAllocated || 0;
-      return {
-        ...prev,
-        manual34A: {
-          enabled: true,
-          weeklyRate: rate,
-          amountAllocated: amount
-        }
-      };
-    });
-  };
-
-  const handleManual34AAmountChange = (amount: number) => {
-    setBenefitsOptions(prev => {
-      const rate = prev.manual34A?.weeklyRate || 0;
-      return {
-        ...prev,
-        manual34A: {
-          enabled: true,
-          weeklyRate: rate,
-          amountAllocated: amount
-        }
-      };
-    });
   };
 
   // Calculate allocation status
   const allocationStatus = useMemo(() => {
     const regularAllocations = benefitsOptions.settlementAllocations?.reduce((sum, a) => sum + a.amountAllocated, 0) || 0;
     const section36 = benefitsOptions.section36Amount || 0;
-    const manual34A = benefitsOptions.manual34A?.enabled ? benefitsOptions.manual34A.amountAllocated : 0;
 
-    const totalAllocated = regularAllocations + section36 + manual34A;
+    const totalAllocated = regularAllocations + section36;
     const settlementAmount = benefitsOptions.settlementAmount || 0;
     const difference = settlementAmount - totalAllocated;
 
@@ -1127,13 +1138,34 @@ export function SettlementCalculator({
                                         {formatCurrency(benefit.finalWeekly)}/week
                                       </p>
                                     </div>
-                                    <button
-                                      onClick={() => handleRemoveAllocation(allocation.type)}
-                                      className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
-                                      title="Remove this benefit"
-                                    >
-                                      <Trash2 className="h-4 w-4" />
-                                    </button>
+                                    <div className="flex items-center gap-2">
+                                      {(() => {
+                                        const entitlement = remainingEntitlements.find(e => e.type === allocation.type);
+                                        const hasRemaining = entitlement && !entitlement.isLifeBenefit &&
+                                          entitlement.weeksRemaining && entitlement.weeksRemaining > 0;
+
+                                        if (hasRemaining) {
+                                          const years = (entitlement.weeksRemaining || 0) / 52;
+                                          return (
+                                            <button
+                                              onClick={() => handleFillRemaining(allocation.type)}
+                                              className="text-xs px-2 py-1 bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50 whitespace-nowrap"
+                                              title={`Fill with remaining ${years.toFixed(1)} years`}
+                                            >
+                                              Fill: {years.toFixed(1)}y
+                                            </button>
+                                          );
+                                        }
+                                        return null;
+                                      })()}
+                                      <button
+                                        onClick={() => handleRemoveAllocation(allocation.type)}
+                                        className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                        title="Remove this benefit"
+                                      >
+                                        <Trash2 className="h-4 w-4" />
+                                      </button>
+                                    </div>
                                   </div>
 
                                   {/* Dual Input: Years OR Dollars */}
@@ -1141,10 +1173,9 @@ export function SettlementCalculator({
                                     <div>
                                       <label className="text-xs text-gray-600 dark:text-gray-400">Years</label>
                                       <input
-                                        type="number"
-                                        step="0.1"
-                                        value={allocation.yearsCovered > 0 ? allocation.yearsCovered.toFixed(2) : ''}
-                                        onChange={(e) => handleAllocationYearsChange(allocation.type, parseFloat(e.target.value) || 0)}
+                                        type="text"
+                                        value={allocation.yearInput || ''}
+                                        onChange={(e) => handleAllocationYearsChange(allocation.type, e.target.value)}
                                         className="w-full text-sm"
                                         placeholder="0.0"
                                       />
@@ -1155,8 +1186,8 @@ export function SettlementCalculator({
                                         <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
                                         <input
                                           type="text"
-                                          value={allocation.amountAllocated > 0 ? allocation.amountAllocated.toFixed(2) : ''}
-                                          onChange={(e) => handleAllocationDollarsChange(allocation.type, parseCurrency(e.target.value))}
+                                          value={allocation.dollarInput || ''}
+                                          onChange={(e) => handleAllocationDollarsChange(allocation.type, e.target.value)}
                                           className="pl-6 w-full text-sm"
                                           placeholder="0.00"
                                         />
@@ -1194,55 +1225,6 @@ export function SettlementCalculator({
                       <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                         Flat amount for scarring/disfigurement benefits
                       </p>
-                    </div>
-
-                    {/* Manual 34A Entry */}
-                    <div className="pt-3 border-t border-gray-300 dark:border-gray-600 space-y-3">
-                      <label className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          checked={benefitsOptions.manual34A?.enabled || false}
-                          onChange={(e) => handleManual34AToggle(e.target.checked)}
-                          className="h-4 w-4"
-                        />
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Include Section 34A (P&T) Manually</span>
-                      </label>
-
-                      {benefitsOptions.manual34A?.enabled && (
-                        <div className="space-y-2 pl-6">
-                          <div>
-                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Weekly Rate</label>
-                            <div className="relative mt-1">
-                              <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
-                              <input
-                                type="text"
-                                value={benefitsOptions.manual34A?.weeklyRate || ''}
-                                onChange={(e) => handleManual34AWeeklyRateChange(parseCurrency(e.target.value))}
-                                className="pl-6 w-full text-sm"
-                                placeholder="0.00"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="text-xs font-medium text-gray-700 dark:text-gray-300">Amount Allocated</label>
-                            <div className="relative mt-1">
-                              <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
-                              <input
-                                type="text"
-                                value={benefitsOptions.manual34A?.amountAllocated || ''}
-                                onChange={(e) => handleManual34AAmountChange(parseCurrency(e.target.value))}
-                                className="pl-6 w-full text-sm"
-                                placeholder="0.00"
-                              />
-                            </div>
-                          </div>
-                          {benefitsOptions.manual34A.weeklyRate > 0 && benefitsOptions.manual34A.amountAllocated > 0 && (
-                            <p className="text-xs text-gray-600 dark:text-gray-400">
-                              Covers {(benefitsOptions.manual34A.amountAllocated / benefitsOptions.manual34A.weeklyRate).toFixed(1)} weeks ({((benefitsOptions.manual34A.amountAllocated / benefitsOptions.manual34A.weeklyRate) / 52).toFixed(1)} years)
-                            </p>
-                          )}
-                        </div>
-                      )}
                     </div>
 
                     {/* Allocation Status Indicator */}
