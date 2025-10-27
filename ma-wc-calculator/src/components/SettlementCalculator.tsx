@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { formatCurrency, parseCurrency } from '../utils/money';
 import { generateSettlementStatementPDF, generateSettlementStatementExcel, generateSettlementStatementWord, generateBenefitsRemainingPDF, generateBenefitsRemainingExcel, generateBenefitsRemainingWord, downloadBlob } from '../utils/export';
 import { Plus, Trash2, Download, Calculator, FileText, File, FileSpreadsheet, Info } from 'lucide-react';
@@ -260,7 +261,7 @@ export function SettlementCalculator({
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error generating PDF settlement statement:', error);
-      alert('Error generating PDF settlement statement. Please try again.');
+      toast.error('Error generating PDF settlement statement. Please try again.');
     }
   };
 
@@ -273,7 +274,7 @@ export function SettlementCalculator({
       downloadBlob(excelBlob, `settlement-statement-${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
       console.error('Error generating Excel settlement statement:', error);
-      alert('Error generating Excel settlement statement. Please try again.');
+      toast.error('Error generating Excel settlement statement. Please try again.');
     }
   };
 
@@ -286,7 +287,7 @@ export function SettlementCalculator({
       downloadBlob(wordBlob, `settlement-statement-${new Date().toISOString().split('T')[0]}.docx`);
     } catch (error) {
       console.error('Error generating Word settlement statement:', error);
-      alert('Error generating Word settlement statement. Please try again.');
+      toast.error('Error generating Word settlement statement. Please try again.');
     }
   };
 
@@ -351,7 +352,7 @@ export function SettlementCalculator({
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error generating Benefits Remaining PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      toast.error('Error generating PDF. Please try again.');
     }
   };
 
@@ -363,7 +364,7 @@ export function SettlementCalculator({
       downloadBlob(excelBlob, fileName);
     } catch (error) {
       console.error('Error generating Benefits Remaining Excel:', error);
-      alert('Error generating Excel file. Please try again.');
+      toast.error('Error generating Excel file. Please try again.');
     }
   };
 
@@ -375,7 +376,7 @@ export function SettlementCalculator({
       downloadBlob(wordBlob, fileName);
     } catch (error) {
       console.error('Error generating Benefits Remaining Word:', error);
-      alert('Error generating Word document. Please try again.');
+      toast.error('Error generating Word document. Please try again.');
     }
   };
 

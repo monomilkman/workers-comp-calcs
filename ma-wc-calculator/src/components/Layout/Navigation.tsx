@@ -56,8 +56,9 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
                       ? 'border-primary-500 text-primary-600 dark:text-primary-400'
                       : 'border-transparent text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300 hover:border-gray-300 dark:hover:border-gray-600'
                   )}
+                  aria-current={isActive ? 'page' : undefined}
                 >
-                  <Icon className="h-4 w-4" />
+                  <Icon className="h-4 w-4" aria-hidden="true" />
                   <span>{item.label}</span>
                 </button>
               );
@@ -69,15 +70,25 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
       {/* Mobile navigation */}
       {mobileMenuOpen && (
         <div className="lg:hidden">
-          <div className="fixed inset-0 z-50 bg-black bg-opacity-25" onClick={() => setMobileMenuOpen(false)} />
-          <div className="fixed top-0 left-0 z-50 w-64 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-xl">
+          <div
+            className="fixed inset-0 z-50 bg-black bg-opacity-25"
+            onClick={() => setMobileMenuOpen(false)}
+            aria-hidden="true"
+          />
+          <div
+            className="fixed top-0 left-0 z-50 w-64 h-full bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 shadow-xl"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Navigation menu"
+          >
             <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-800">
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">Navigation</h2>
+              <h2 id="mobile-nav-title" className="text-lg font-semibold text-gray-900 dark:text-gray-100">Navigation</h2>
               <button
                 onClick={() => setMobileMenuOpen(false)}
                 className="btn btn-ghost p-2"
+                aria-label="Close navigation menu"
               >
-                <X className="h-5 w-5" />
+                <X className="h-5 w-5" aria-hidden="true" />
               </button>
             </div>
             <nav className="p-4 space-y-2">
@@ -98,8 +109,9 @@ export function Navigation({ activeTab, onTabChange }: NavigationProps) {
                         ? 'bg-primary-50 dark:bg-primary-900/20 text-primary-700 dark:text-primary-300'
                         : 'text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800'
                     )}
+                    aria-current={isActive ? 'page' : undefined}
                   >
-                    <Icon className="h-5 w-5" />
+                    <Icon className="h-5 w-5" aria-hidden="true" />
                     <span className="font-medium">{item.label}</span>
                   </button>
                 );

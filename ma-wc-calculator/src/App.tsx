@@ -1,16 +1,19 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useCalculations } from './hooks/useCalculations';
 import { formatCurrency } from './utils/money';
 import { Clock, FileText } from 'lucide-react';
+import { Toaster } from 'sonner';
 import type { AppState, LedgerEntry, StateRateRow, ProrationMode } from './types';
 
 // Layout Components
 import { ThemeProvider } from './contexts/ThemeContext';
 import { Header } from './components/Layout/Header';
 import { Navigation, type NavigationTab } from './components/Layout/Navigation';
+import { ErrorBoundary } from './components/ErrorBoundary';
+import { Spinner } from './components/UI/Spinner';
 
-// Components
+// Components (Core - loaded immediately)
 import { AwwInput } from './components/AwwInput';
 import { BenefitCard } from './components/BenefitCard';
 import { RemainingSummary } from './components/RemainingSummary';
@@ -19,8 +22,10 @@ import { SettlementCalculator } from './components/SettlementCalculator';
 import { DemandBuilder } from './components/DemandBuilder';
 import { ExportButtons } from './components/ExportButtons';
 import SettingsStateRates from './components/SettingsStateRates';
-import { MVASettlementCalculator } from './components/MVASettlementCalculator';
-import { GLSettlementCalculator } from './components/GLSettlementCalculator';
+
+// Lazy-loaded components (only loaded when needed)
+const MVASettlementCalculator = lazy(() => import('./components/MVASettlementCalculator').then(module => ({ default: module.MVASettlementCalculator })));
+const GLSettlementCalculator = lazy(() => import('./components/GLSettlementCalculator').then(module => ({ default: module.GLSettlementCalculator })));
 
 function AppContent() {
   // State management
@@ -287,14 +292,28 @@ function AppContent() {
       case 'mva':
         return (
           <div className="max-w-6xl mx-auto">
-            <MVASettlementCalculator />
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-12">
+                <Spinner />
+                <span className="ml-3 text-gray-600 dark:text-gray-400">Loading MVA Calculator...</span>
+              </div>
+            }>
+              <MVASettlementCalculator />
+            </Suspense>
           </div>
         );
 
       case 'gl':
         return (
           <div className="max-w-6xl mx-auto">
-            <GLSettlementCalculator />
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-12">
+                <Spinner />
+                <span className="ml-3 text-gray-600 dark:text-gray-400">Loading GL Calculator...</span>
+              </div>
+            }>
+              <GLSettlementCalculator />
+            </Suspense>
           </div>
         );
 
@@ -305,9 +324,16 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+      <Toaster
+        position="top-right"
+        expand={true}
+        richColors
+        closeButton
+        theme="system"
+      />
       <Header />
       <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
-      
+
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {renderTabContent()}
       </main>
@@ -319,7 +345,7 @@ function AppContent() {
             MA Workers' Compensation Benefits Calculator - Built for legal professionals representing injured workers
           </p>
           <p className="mt-1">
-            This tool provides calculations based on Massachusetts workers' compensation statutes. 
+            This tool provides calculations based on Massachusetts workers' compensation statutes.
             Always verify calculations and consult current regulations.
           </p>
         </div>
@@ -330,9 +356,11 @@ function AppContent() {
 
 function App() {
   return (
-    <ThemeProvider>
-      <AppContent />
-    </ThemeProvider>
+    <ErrorBoundary>
+      <ThemeProvider>
+        <AppContent />
+      </ThemeProvider>
+    </ErrorBoundary>
   );
 }
 

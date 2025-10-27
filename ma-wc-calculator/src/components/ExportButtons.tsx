@@ -1,12 +1,14 @@
 import { useState } from 'react';
-import { 
-  exportLedgerToCSV, 
-  exportSessionToJSON, 
+import { toast } from 'sonner';
+import {
+  exportLedgerToCSV,
+  exportSessionToJSON,
   generateDemandPDF,
   createDownloadBlob,
   downloadBlob
 } from '../utils/export';
 import { useSessionStorage } from '../hooks/useLocalStorage';
+import { useKeyboardShortcuts } from '../hooks/useKeyboardShortcut';
 import type { AppState, LedgerEntry, DemandCalculation } from '../types';
 
 interface ExportButtonsProps {
@@ -39,7 +41,7 @@ export function ExportButtons({
       downloadBlob(blob, fileName);
     } catch (error) {
       console.error('Error exporting CSV:', error);
-      alert('Error exporting CSV file. Please try again.');
+      toast.error('Error exporting CSV file. Please try again.');
     }
   };
 
@@ -54,13 +56,13 @@ export function ExportButtons({
       downloadBlob(blob, fileName);
     } catch (error) {
       console.error('Error exporting JSON:', error);
-      alert('Error exporting session file. Please try again.');
+      toast.error('Error exporting session file. Please try again.');
     }
   };
 
   const handleExportPDF = () => {
     if (!demandCalculation) {
-      alert('No demand calculation available to export.');
+      toast.warning('No demand calculation available to export.');
       return;
     }
 
@@ -74,25 +76,25 @@ export function ExportButtons({
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error generating PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      toast.error('Error generating PDF. Please try again.');
     }
   };
 
   const handleSaveSession = () => {
     if (!sessionName.trim()) {
-      alert('Please enter a session name.');
+      toast.warning('Please enter a session name.');
       return;
     }
 
     try {
       saveSession(appState, sessionName.trim());
-      alert(`Session "${sessionName}" saved successfully!`);
+      toast.success(`Session "${sessionName}" saved successfully!`);
       setShowSaveModal(false);
       setSessionName('');
       setSessionDescription('');
     } catch (error) {
       console.error('Error saving session:', error);
-      alert('Error saving session. Please try again.');
+      toast.error('Error saving session. Please try again.');
     }
   };
 
@@ -105,16 +107,49 @@ export function ExportButtons({
         const jsonContent = JSON.stringify(sessionData, null, 2);
         const blob = createDownloadBlob(jsonContent, 'application/json');
         downloadBlob(blob, `loaded-session-${sessionKey}.json`);
-        alert('Session data downloaded. Import functionality would be implemented in the main app.');
+        toast.info('Session data downloaded. Import functionality would be implemented in the main app.');
       }
     } catch (error) {
       console.error('Error loading session:', error);
-      alert('Error loading session. Please try again.');
+      toast.error('Error loading session. Please try again.');
     }
   };
 
   const savedSessions = getAllSessions();
   const sessionKeys = Object.keys(savedSessions);
+
+  // Keyboard shortcuts
+  useKeyboardShortcuts([
+    // Ctrl+S to open save modal
+    {
+      shortcut: { key: 's', ctrl: true },
+      callback: () => {
+        if (!showSaveModal && !showLoadModal) {
+          setShowSaveModal(true);
+          toast.info('Save session shortcut: Ctrl+S');
+        }
+      }
+    },
+    // Escape to close modals
+    {
+      shortcut: { key: 'Escape' },
+      callback: () => {
+        if (showSaveModal) setShowSaveModal(false);
+        if (showLoadModal) setShowLoadModal(false);
+      },
+      enabled: showSaveModal || showLoadModal
+    },
+    // Ctrl+E to export JSON
+    {
+      shortcut: { key: 'e', ctrl: true },
+      callback: () => {
+        if (!showSaveModal && !showLoadModal) {
+          handleExportJSON();
+          toast.info('Export session shortcut: Ctrl+E');
+        }
+      }
+    }
+  ]);
 
   return (
     <div className="card">

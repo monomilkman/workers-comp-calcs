@@ -1,17 +1,18 @@
 import { useMemo } from 'react';
-import type { 
-  BenefitType, 
-  BenefitCalculation, 
-  LedgerEntry, 
+import type {
+  BenefitType,
+  BenefitCalculation,
+  LedgerEntry,
   RemainingEntitlement,
-  StateRateRow 
+  StateRateRow
 } from '../types';
-import { 
-  calculateWeeklyRate, 
+import {
+  calculateWeeklyRate,
   getStatutoryMaxWeeks,
-  getCombinedMaxWeeks 
+  getCombinedMaxWeeks
 } from '../utils/rates';
 import { calculateYearly } from '../utils/money';
+import { COMBINED_35_MAX_WEEKS } from '../constants/statutory';
 
 /**
  * Custom hook for calculating benefit rates and remaining entitlements
@@ -106,8 +107,7 @@ export function useCalculations(
   const remainingEntitlements = useMemo((): RemainingEntitlement[] => {
     // Calculate combined 35 + 35EC usage for shared 4-year limit
     const combined35Weeks = weeksUsedByType['35'] + weeksUsedByType['35ec'];
-    const section35MaxWeeks = 208; // 4 years shared between 35 and 35EC
-    const combined35Remaining = Math.max(0, section35MaxWeeks - combined35Weeks);
+    const combined35Remaining = Math.max(0, COMBINED_35_MAX_WEEKS - combined35Weeks);
     
     return benefitCalculations.map(benefit => {
       const weeksUsed = weeksUsedByType[benefit.type];
@@ -120,7 +120,7 @@ export function useCalculations(
       if (!isLifeBenefit && benefit.statutoryMaxWeeks !== null) {
         if (benefit.type === '35' || benefit.type === '35ec') {
           // For Section 35 and 35EC, use shared limit
-          effectiveMaxWeeks = section35MaxWeeks;
+          effectiveMaxWeeks = COMBINED_35_MAX_WEEKS;
           weeksRemaining = combined35Remaining;
           dollarsRemaining = weeksRemaining * benefit.finalWeekly;
         } else {
@@ -157,13 +157,12 @@ export function useCalculations(
   // Calculate combined Section 35 + 35EC usage (4-year shared cap)
   const combined35Usage = useMemo(() => {
     const combined35Weeks = weeksUsedByType['35'] + weeksUsedByType['35ec'];
-    const combined35MaxWeeks = 208; // 4 years shared between 35 and 35EC
-    const combined35Remaining = Math.max(0, combined35MaxWeeks - combined35Weeks);
-    
+    const combined35Remaining = Math.max(0, COMBINED_35_MAX_WEEKS - combined35Weeks);
+
     return {
       weeksUsed: combined35Weeks,
       weeksRemaining: combined35Remaining,
-      maxWeeks: combined35MaxWeeks
+      maxWeeks: COMBINED_35_MAX_WEEKS
     };
   }, [weeksUsedByType]);
 

@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { toast } from 'sonner';
 import { formatCurrency, parseCurrency } from '../utils/money';
 import { calculateSettlement, validateSettlementData, createEmptyLien } from '../utils/settlementCalculations';
 import { generateSettlementStatementPDF, generateSettlementStatementExcel, generateSettlementStatementWord, downloadBlob } from '../utils/export';
@@ -94,7 +95,7 @@ export function MVASettlementCalculator() {
       document.body.removeChild(link);
     } catch (error) {
       console.error('Error generating MVA PDF:', error);
-      alert('Error generating PDF. Please try again.');
+      toast.error('Error generating PDF. Please try again.');
     }
   };
 
@@ -105,7 +106,7 @@ export function MVASettlementCalculator() {
       downloadBlob(excelBlob, `mva-settlement-${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
       console.error('Error generating MVA Excel:', error);
-      alert('Error generating Excel file. Please try again.');
+      toast.error('Error generating Excel file. Please try again.');
     }
   };
 
@@ -116,7 +117,7 @@ export function MVASettlementCalculator() {
       downloadBlob(wordBlob, `mva-settlement-${new Date().toISOString().split('T')[0]}.docx`);
     } catch (error) {
       console.error('Error generating MVA Word:', error);
-      alert('Error generating Word document. Please try again.');
+      toast.error('Error generating Word document. Please try again.');
     }
   };
 

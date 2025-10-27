@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { toast } from 'sonner';
 import type { StateRateRow } from '../types';
 
 interface SettingsStateRatesProps {
@@ -77,7 +78,7 @@ export default function SettingsStateRates({ stateRateTable, onRatesUpdated }: S
       setLastUpdateTime(ratesData.last_updated || new Date().toISOString());
 
       // Show success notification
-      alert(`Successfully reloaded state rates! Found ${newRates.length} rate periods.`);
+      toast.success(`Successfully reloaded state rates! Found ${newRates.length} rate periods.`);
 
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
@@ -85,7 +86,7 @@ export default function SettingsStateRates({ stateRateTable, onRatesUpdated }: S
       console.error('Failed to reload state rates:', err);
 
       // Show error notification
-      alert(`Failed to reload state rates: ${errorMessage}`);
+      toast.error(`Failed to reload state rates: ${errorMessage}`);
     } finally {
       setIsUpdating(false);
     }

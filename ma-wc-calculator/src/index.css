@@ -135,8 +135,70 @@
   .spinner {
     @apply animate-spin rounded-full border-2 border-gray-300 border-t-primary-600;
   }
-  
+
   .loading-skeleton {
     @apply animate-pulse bg-gray-200 dark:bg-gray-700 rounded;
+  }
+
+  /* Mobile enhancements */
+  .table-container {
+    @apply overflow-x-auto -mx-4 sm:mx-0;
+  }
+
+  .table-container::-webkit-scrollbar {
+    height: 8px;
+  }
+
+  .table-container::-webkit-scrollbar-track {
+    @apply bg-gray-100 dark:bg-gray-800 rounded;
+  }
+
+  .table-container::-webkit-scrollbar-thumb {
+    @apply bg-gray-300 dark:bg-gray-600 rounded;
+  }
+
+  .table-container::-webkit-scrollbar-thumb:hover {
+    @apply bg-gray-400 dark:bg-gray-500;
+  }
+
+  /* Touch targets - minimum 44x44px for accessibility */
+  .touch-target {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* Hide number input spinners on mobile */
+  @media (max-width: 768px) {
+    input[type="number"]::-webkit-inner-spin-button,
+    input[type="number"]::-webkit-outer-spin-button {
+      -webkit-appearance: none;
+      margin: 0;
+    }
+
+    input[type="number"] {
+      -moz-appearance: textfield;
+    }
+  }
+
+  /* Better spacing for mobile cards */
+  @media (max-width: 640px) {
+    .card {
+      @apply rounded-lg p-4;
+    }
+  }
+
+  /* Responsive font sizes */
+  @media (max-width: 640px) {
+    h1 {
+      @apply text-2xl;
+    }
+
+    h2 {
+      @apply text-xl;
+    }
+
+    h3 {
+      @apply text-lg;
+    }
   }
 }

@@ -1,10 +1,21 @@
-import type { 
-  StateRateRow, 
-  BenefitType, 
+import type {
+  StateRateRow,
+  BenefitType,
   WeeklyRateResult,
-  StateMinMaxApplication 
+  StateMinMaxApplication
 } from '../types';
 import { isDateInPeriod } from './dates';
+import {
+  SECTION_34_RATE,
+  SECTION_35_RATE,
+  SECTION_35_EC_RATE,
+  SECTION_34A_RATE,
+  SECTION_31_RATE,
+  SECTION_34_MAX_WEEKS,
+  SECTION_35_MAX_WEEKS,
+  SECTION_35_EC_MAX_WEEKS,
+  COMBINED_34_35_MAX_WEEKS
+} from '../constants/statutory';
 
 /**
  * Get the applicable state minimum and maximum rates for a given date of injury
@@ -100,12 +111,12 @@ export function applyStateMinMax(
 
 /**
  * Calculate raw weekly benefit rate based on benefit type
- * Implements exact Massachusetts formulas:
- * - Section 34 (TTD): AWW * 0.60
- * - Section 35 (TPD no EC): (AWW * 0.60) * 0.75 = AWW * 0.45
- * - Section 35 EC: (AWW - EC) * 0.60, min 0
- * - Section 34A (P&T): AWW * 0.666666666
- * - Section 31 (Dependent): AWW * 0.666666666 (same as 34A)
+ * Implements exact Massachusetts formulas using statutory constants
+ * - Section 34 (TTD): AWW * SECTION_34_RATE
+ * - Section 35 (TPD no EC): (AWW * SECTION_34_RATE) * SECTION_35_RATE
+ * - Section 35 EC: (AWW - EC) * SECTION_35_EC_RATE, min 0
+ * - Section 34A (P&T): AWW * SECTION_34A_RATE
+ * - Section 31 (Dependent): AWW * SECTION_31_RATE
  */
 function calculateRawWeekly(
   type: BenefitType,
@@ -115,25 +126,28 @@ function calculateRawWeekly(
   switch (type) {
     case '34':
       // Section 34: 60% of AWW
-      return aww * 0.60;
-      
+      return aww * SECTION_34_RATE;
+
     case '35':
-      // Section 35 (no EC): 75% of Section 34 rate = 45% of AWW
-      return (aww * 0.60) * 0.75;
-      
+      // Section 35 (no EC): 75% of Section 34 rate
+      return (aww * SECTION_34_RATE) * SECTION_35_RATE;
+
     case '35ec':
       // Section 35 with Earning Capacity: (AWW - EC) * 60%
       const ec = options.ec || 0;
       if (ec >= aww) {
         return 0; // No benefit if earning capacity >= AWW
       }
-      return (aww - ec) * 0.60;
-      
+      return (aww - ec) * SECTION_35_EC_RATE;
+
     case '34A':
+      // Section 34A: 66⅔% of AWW
+      return aww * SECTION_34A_RATE;
+
     case '31':
-      // Section 34A and 31: 66.6666666% of AWW
-      return aww * 0.666666666;
-      
+      // Section 31: 66⅔% of AWW
+      return aww * SECTION_31_RATE;
+
     default:
       throw new Error(`Unknown benefit type: ${type}`);
   }
@@ -166,7 +180,7 @@ export function calculateWeeklyRate(
     const section34Result = calculateWeeklyRate('34', aww, options);
 
     // Apply 75% to the final (capped) Section 34 rate
-    const section35Raw = section34Result.finalWeekly * 0.75;
+    const section35Raw = section34Result.finalWeekly * SECTION_35_RATE;
 
     // Apply state min/max to the Section 35 rate
     return applyStateMinMax(
@@ -194,10 +208,11 @@ export function calculateWeeklyRate(
 export function getStatutoryMaxWeeks(type: BenefitType): number | null {
   switch (type) {
     case '34':
-      return 156; // 3 years
+      return SECTION_34_MAX_WEEKS; // 3 years (156 weeks)
     case '35':
+      return SECTION_35_MAX_WEEKS; // 4 years (208 weeks)
     case '35ec':
-      return 208; // 4 years
+      return SECTION_35_EC_MAX_WEEKS; // 4 years (208 weeks)
     case '34A':
     case '31':
       return null; // Life benefits
@@ -210,5 +225,5 @@ export function getStatutoryMaxWeeks(type: BenefitType): number | null {
  * Get the maximum combined weeks for Section 34 + 35 benefits
  */
 export function getCombinedMaxWeeks(): number {
-  return 364; // 7 years total
+  return COMBINED_34_35_MAX_WEEKS; // 7 years total (364 weeks)
 }
