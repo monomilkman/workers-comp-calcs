@@ -7,9 +7,8 @@ import { Toaster } from 'sonner';
 import type { AppState, LedgerEntry, StateRateRow, ProrationMode } from './types';
 
 // Layout Components
-import { ThemeProvider } from './contexts/ThemeContext';
-import { Header } from './components/Layout/Header';
-import { Navigation, type NavigationTab } from './components/Layout/Navigation';
+import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { Sidebar, type NavigationTab } from './components/Layout/Sidebar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Spinner } from './components/UI/Spinner';
 
@@ -28,6 +27,9 @@ const MVASettlementCalculator = lazy(() => import('./components/MVASettlementCal
 const GLSettlementCalculator = lazy(() => import('./components/GLSettlementCalculator').then(module => ({ default: module.GLSettlementCalculator })));
 
 function AppContent() {
+  // Theme management
+  const { theme, toggleTheme } = useTheme();
+
   // State management
   const [aww, setAww] = useLocalStorage('ma_wc_aww', 1000);
   const [dateOfInjury, setDateOfInjury] = useLocalStorage('ma_wc_doi', '2025-01-02');
@@ -323,7 +325,7 @@ function AppContent() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-gray-950">
       <Toaster
         position="top-right"
         expand={true}
@@ -331,25 +333,37 @@ function AppContent() {
         closeButton
         theme="system"
       />
-      <Header />
-      <Navigation activeTab={activeTab} onTabChange={setActiveTab} />
 
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {renderTabContent()}
-      </main>
+      {/* Sidebar Navigation */}
+      <Sidebar
+        activeTab={activeTab}
+        onTabChange={setActiveTab}
+        theme={theme}
+        onThemeToggle={toggleTheme}
+      />
 
-      {/* Footer */}
-      <footer className="mt-12 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
-          <p>
-            MA Workers' Compensation Benefits Calculator - Built for legal professionals representing injured workers
-          </p>
-          <p className="mt-1">
-            This tool provides calculations based on Massachusetts workers' compensation statutes.
-            Always verify calculations and consult current regulations.
-          </p>
-        </div>
-      </footer>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col overflow-hidden">
+        {/* Main scrollable content */}
+        <main className="flex-1 overflow-y-auto">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+            {renderTabContent()}
+          </div>
+
+          {/* Footer */}
+          <footer className="mt-12 border-t border-gray-200 dark:border-gray-800 bg-white/50 dark:bg-gray-900/50">
+            <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
+              <p>
+                MA Workers' Compensation Benefits Calculator - Built for legal professionals representing injured workers
+              </p>
+              <p className="mt-1">
+                This tool provides calculations based on Massachusetts workers' compensation statutes.
+                Always verify calculations and consult current regulations.
+              </p>
+            </div>
+          </footer>
+        </main>
+      </div>
     </div>
   );
 }
