@@ -3,7 +3,7 @@ import { formatCurrency, parseCurrency } from '../utils/money';
 import { generateSettlementStatementPDF, generateSettlementStatementExcel, generateSettlementStatementWord, generateBenefitsRemainingPDF, generateBenefitsRemainingExcel, generateBenefitsRemainingWord, downloadBlob } from '../utils/export';
 import { Plus, Trash2, Download, Calculator, FileText, File, FileSpreadsheet, Info } from 'lucide-react';
 import type { BenefitCalculation, RemainingEntitlement } from '../types';
-import type { BenefitsRemainingOptions, BenefitsRemainingData, SettlementAllocation } from '../types/settlement';
+import type { BenefitsRemainingOptions, BenefitsRemainingData } from '../types/settlement';
 
 interface SettlementCalculatorProps {
   benefitCalculations: BenefitCalculation[];
@@ -385,83 +385,73 @@ export function SettlementCalculator({
   };
 
   // Settlement Offer handlers
-  const calculateAutoAllocations = (amount: number): SettlementAllocation[] => {
-    const allocations: SettlementAllocation[] = [];
-    let remainingAmount = amount;
-
-    remainingEntitlements.forEach((entitlement) => {
-      if (remainingAmount <= 0) return;
-
-      const benefit = benefitCalculations.find(b => b.type === entitlement.type);
-      if (!benefit || benefit.finalWeekly === 0) return;
-
-      let amountToAllocate = 0;
-      let weeksCovered = 0;
-
-      if (entitlement.isLifeBenefit) {
-        weeksCovered = remainingAmount / benefit.finalWeekly;
-        amountToAllocate = remainingAmount;
-        remainingAmount = 0;
-      } else if (entitlement.dollarsRemaining && entitlement.dollarsRemaining > 0) {
-        if (remainingAmount >= entitlement.dollarsRemaining) {
-          amountToAllocate = entitlement.dollarsRemaining;
-          weeksCovered = entitlement.weeksRemaining || 0;
-          remainingAmount -= entitlement.dollarsRemaining;
-        } else {
-          amountToAllocate = remainingAmount;
-          weeksCovered = remainingAmount / benefit.finalWeekly;
-          remainingAmount = 0;
-        }
-      }
-
-      if (amountToAllocate > 0) {
-        allocations.push({
-          type: entitlement.type,
-          amountAllocated: amountToAllocate,
-          weeksCovered,
-          yearsCovered: weeksCovered / 52
-        });
-      }
-    });
-
-    return allocations;
-  };
-
   const handleSettlementAmountChange = (amount: number) => {
     setBenefitsOptions(prev => ({
       ...prev,
-      settlementAmount: amount,
-      settlementAllocations: calculateAutoAllocations(amount)
+      settlementAmount: amount
+      // No longer auto-populating allocations - let user manually select benefits
     }));
   };
 
-  const handleAllocationChange = (type: string, newAmount: number) => {
+  const handleAddAllocation = (benefitType: string) => {
+    const benefit = benefitCalculations.find(b => b.type === benefitType);
+    if (!benefit) return;
+
+    setBenefitsOptions(prev => ({
+      ...prev,
+      settlementAllocations: [
+        ...(prev.settlementAllocations || []),
+        {
+          type: benefitType,
+          amountAllocated: 0,
+          weeksCovered: 0,
+          yearsCovered: 0,
+          weeklyRate: benefit.finalWeekly,
+          inputMode: 'years' as const
+        }
+      ]
+    }));
+  };
+
+  const handleRemoveAllocation = (benefitType: string) => {
+    setBenefitsOptions(prev => ({
+      ...prev,
+      settlementAllocations: prev.settlementAllocations?.filter(a => a.type !== benefitType) || []
+    }));
+  };
+
+  const handleAllocationYearsChange = (type: string, years: number) => {
     const benefit = benefitCalculations.find(b => b.type === type);
     if (!benefit || benefit.finalWeekly === 0) return;
 
-    const weeksCovered = newAmount / benefit.finalWeekly;
+    const weeksCovered = years * 52;
+    const amountAllocated = weeksCovered * benefit.finalWeekly;
+
+    setBenefitsOptions(prev => ({
+      ...prev,
+      settlementAllocations: prev.settlementAllocations?.map(alloc =>
+        alloc.type === type
+          ? { ...alloc, yearsCovered: years, weeksCovered, amountAllocated, inputMode: 'years' as const }
+          : alloc
+      ) || []
+    }));
+  };
+
+  const handleAllocationDollarsChange = (type: string, dollars: number) => {
+    const benefit = benefitCalculations.find(b => b.type === type);
+    if (!benefit || benefit.finalWeekly === 0) return;
+
+    const weeksCovered = dollars / benefit.finalWeekly;
     const yearsCovered = weeksCovered / 52;
 
-    setBenefitsOptions(prev => {
-      const currentAllocations = prev.settlementAllocations || [];
-      const existingIndex = currentAllocations.findIndex(a => a.type === type);
-
-      let newAllocations: SettlementAllocation[];
-      if (existingIndex >= 0) {
-        newAllocations = currentAllocations.map((alloc, idx) =>
-          idx === existingIndex
-            ? { ...alloc, amountAllocated: newAmount, weeksCovered, yearsCovered }
-            : alloc
-        );
-      } else {
-        newAllocations = [...currentAllocations, { type, amountAllocated: newAmount, weeksCovered, yearsCovered }];
-      }
-
-      return {
-        ...prev,
-        settlementAllocations: newAllocations
-      };
-    });
+    setBenefitsOptions(prev => ({
+      ...prev,
+      settlementAllocations: prev.settlementAllocations?.map(alloc =>
+        alloc.type === type
+          ? { ...alloc, amountAllocated: dollars, weeksCovered, yearsCovered, inputMode: 'dollars' as const }
+          : alloc
+      ) || []
+    }));
   };
 
   const handleUseProposedSettlement = () => {
@@ -514,6 +504,23 @@ export function SettlementCalculator({
       };
     });
   };
+
+  // Calculate allocation status
+  const allocationStatus = useMemo(() => {
+    const regularAllocations = benefitsOptions.settlementAllocations?.reduce((sum, a) => sum + a.amountAllocated, 0) || 0;
+    const section36 = benefitsOptions.section36Amount || 0;
+    const manual34A = benefitsOptions.manual34A?.enabled ? benefitsOptions.manual34A.amountAllocated : 0;
+
+    const totalAllocated = regularAllocations + section36 + manual34A;
+    const settlementAmount = benefitsOptions.settlementAmount || 0;
+    const difference = settlementAmount - totalAllocated;
+
+    let status: 'perfect' | 'under' | 'over' = 'under';
+    if (Math.abs(difference) < 100) status = 'perfect';
+    else if (difference < -100) status = 'over';
+
+    return { totalAllocated, settlementAmount, difference, status };
+  }, [benefitsOptions]);
 
   return (
     <div className="space-y-6">
@@ -1074,57 +1081,100 @@ export function SettlementCalculator({
                       </div>
                     </div>
 
-                    {benefitsOptions.settlementAmount && benefitsOptions.settlementAmount > 0 && benefitsOptions.settlementAllocations && benefitsOptions.settlementAllocations.length > 0 && (
+                    {benefitsOptions.settlementAmount && benefitsOptions.settlementAmount > 0 && (
                       <div className="space-y-3">
                         <div className="flex items-center justify-between">
                           <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Benefit Allocation</p>
-                          <p className="text-xs text-gray-500 dark:text-gray-400">Adjust amounts as needed</p>
+                          <p className="text-xs text-gray-500 dark:text-gray-400">Manually select which benefits to include</p>
                         </div>
 
-                        {benefitsOptions.settlementAllocations.map((allocation) => {
-                          const benefit = benefitCalculations.find(b => b.type === allocation.type);
-                          if (!benefit) return null;
+                        {/* Add Benefit Dropdown */}
+                        <div className="flex gap-2">
+                          <select
+                            className="flex-1 text-sm"
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                handleAddAllocation(e.target.value);
+                                e.target.value = ''; // Reset selection
+                              }
+                            }}
+                            value=""
+                          >
+                            <option value="">+ Add Benefit Type</option>
+                            {benefitCalculations
+                              .filter(b => !benefitsOptions.settlementAllocations?.some(a => a.type === b.type))
+                              .map(benefit => (
+                                <option key={benefit.type} value={benefit.type}>
+                                  {getBenefitTitle(benefit.type)} - {formatCurrency(benefit.finalWeekly)}/week
+                                </option>
+                              ))}
+                          </select>
+                        </div>
 
-                          return (
-                            <div key={allocation.type} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
-                              <div className="flex items-start justify-between mb-2">
-                                <div className="flex-1">
-                                  <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{getBenefitTitle(allocation.type)}</p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    {formatCurrency(benefit.finalWeekly)}/week
-                                  </p>
-                                </div>
-                                <div className="text-right">
-                                  <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-                                    {allocation.yearsCovered.toFixed(1)} years
-                                  </p>
-                                  <p className="text-xs text-gray-500 dark:text-gray-400">
-                                    ({allocation.weeksCovered.toFixed(1)} weeks)
-                                  </p>
-                                </div>
-                              </div>
-                              <div className="relative">
-                                <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
-                                <input
-                                  type="text"
-                                  value={allocation.amountAllocated > 0 ? allocation.amountAllocated.toFixed(2) : ''}
-                                  onChange={(e) => handleAllocationChange(allocation.type, parseCurrency(e.target.value))}
-                                  className="pl-6 w-full text-sm"
-                                  placeholder="0.00"
-                                />
-                              </div>
-                            </div>
-                          );
-                        })}
+                        {/* Benefit Allocations List */}
+                        {benefitsOptions.settlementAllocations && benefitsOptions.settlementAllocations.length > 0 && (
+                          <div className="space-y-2">
+                            {benefitsOptions.settlementAllocations.map((allocation) => {
+                              const benefit = benefitCalculations.find(b => b.type === allocation.type);
+                              if (!benefit) return null;
 
-                        <div className="pt-2 border-t border-gray-300 dark:border-gray-600">
-                          <div className="flex justify-between text-sm">
-                            <span className="font-medium text-gray-700 dark:text-gray-300">Total Allocated:</span>
-                            <span className="font-semibold text-gray-900 dark:text-gray-100">
-                              {formatCurrency(benefitsOptions.settlementAllocations.reduce((sum, a) => sum + a.amountAllocated, 0))}
-                            </span>
+                              return (
+                                <div key={allocation.type} className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-600">
+                                  <div className="flex items-start justify-between mb-2">
+                                    <div className="flex-1">
+                                      <p className="font-medium text-gray-900 dark:text-gray-100 text-sm">{getBenefitTitle(allocation.type)}</p>
+                                      <p className="text-xs text-gray-500 dark:text-gray-400">
+                                        {formatCurrency(benefit.finalWeekly)}/week
+                                      </p>
+                                    </div>
+                                    <button
+                                      onClick={() => handleRemoveAllocation(allocation.type)}
+                                      className="p-1 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                                      title="Remove this benefit"
+                                    >
+                                      <Trash2 className="h-4 w-4" />
+                                    </button>
+                                  </div>
+
+                                  {/* Dual Input: Years OR Dollars */}
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <label className="text-xs text-gray-600 dark:text-gray-400">Years</label>
+                                      <input
+                                        type="number"
+                                        step="0.1"
+                                        value={allocation.yearsCovered > 0 ? allocation.yearsCovered.toFixed(2) : ''}
+                                        onChange={(e) => handleAllocationYearsChange(allocation.type, parseFloat(e.target.value) || 0)}
+                                        className="w-full text-sm"
+                                        placeholder="0.0"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="text-xs text-gray-600 dark:text-gray-400">Dollar Amount</label>
+                                      <div className="relative">
+                                        <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
+                                        <input
+                                          type="text"
+                                          value={allocation.amountAllocated > 0 ? allocation.amountAllocated.toFixed(2) : ''}
+                                          onChange={(e) => handleAllocationDollarsChange(allocation.type, parseCurrency(e.target.value))}
+                                          className="pl-6 w-full text-sm"
+                                          placeholder="0.00"
+                                        />
+                                      </div>
+                                    </div>
+                                  </div>
+
+                                  {/* Display calculated values */}
+                                  {allocation.amountAllocated > 0 && (
+                                    <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                                      = {allocation.weeksCovered.toFixed(1)} weeks ({allocation.yearsCovered.toFixed(2)} years) at {formatCurrency(benefit.finalWeekly)}/week
+                                    </p>
+                                  )}
+                                </div>
+                              );
+                            })}
                           </div>
-                        </div>
+                        )}
                       </div>
                     )}
 
@@ -1194,6 +1244,46 @@ export function SettlementCalculator({
                         </div>
                       )}
                     </div>
+
+                    {/* Allocation Status Indicator */}
+                    {benefitsOptions.settlementAmount && benefitsOptions.settlementAmount > 0 && (
+                      <div className={`pt-3 mt-3 border-t border-gray-300 dark:border-gray-600 p-3 rounded-lg ${
+                        allocationStatus.status === 'perfect' ? 'bg-green-50 dark:bg-green-900/10 border border-green-200 dark:border-green-700' :
+                        allocationStatus.status === 'over' ? 'bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-700' :
+                        'bg-yellow-50 dark:bg-yellow-900/10 border border-yellow-200 dark:border-yellow-700'
+                      }`}>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Settlement Amount:</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(allocationStatus.settlementAmount)}</span>
+                        </div>
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Total Allocated:</span>
+                          <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">{formatCurrency(allocationStatus.totalAllocated)}</span>
+                        </div>
+                        <div className="flex justify-between items-center pt-2 border-t border-gray-300 dark:border-gray-600">
+                          <span className="text-sm font-bold text-gray-900 dark:text-gray-100">
+                            {allocationStatus.difference >= 0 ? 'Unallocated:' : 'Over-allocated:'}
+                          </span>
+                          <span className={`text-sm font-bold ${
+                            allocationStatus.status === 'perfect' ? 'text-green-700 dark:text-green-400' :
+                            allocationStatus.status === 'over' ? 'text-red-700 dark:text-red-400' :
+                            'text-yellow-700 dark:text-yellow-400'
+                          }`}>
+                            {formatCurrency(Math.abs(allocationStatus.difference))}
+                          </span>
+                        </div>
+                        {allocationStatus.status === 'perfect' && (
+                          <p className="text-xs text-green-700 dark:text-green-400 mt-2">
+                            ✓ Fully allocated (within $100)
+                          </p>
+                        )}
+                        {allocationStatus.status === 'over' && (
+                          <p className="text-xs text-red-700 dark:text-red-400 mt-2">
+                            ⚠ Warning: Allocated amount exceeds settlement
+                          </p>
+                        )}
+                      </div>
+                    )}
                   </div>
                 </div>
               )}

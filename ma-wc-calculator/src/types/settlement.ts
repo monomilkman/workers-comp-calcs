@@ -44,6 +44,7 @@ export interface SettlementAllocation {
   weeksCovered: number;
   yearsCovered: number;
   weeklyRate?: number; // For manual entries like 34A
+  inputMode?: 'years' | 'dollars'; // Track which input method is being used
 }
 
 export interface BenefitsRemainingOptions {
