@@ -330,7 +330,8 @@ export function SettlementCalculator({
       weeksUsed: e.weeksUsed,
       weeksRemaining: e.weeksRemaining,
       dollarsRemaining: e.dollarsRemaining,
-      isLifeBenefit: e.isLifeBenefit
+      isLifeBenefit: e.isLifeBenefit,
+      sharesLimitWith: e.sharesLimitWith
     })),
     combinedUsage,
     combined35Usage,
