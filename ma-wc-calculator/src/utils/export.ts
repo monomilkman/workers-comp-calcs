@@ -290,8 +290,8 @@ export async function generateSettlementStatementPDF(
         const desc = expense.description.trim() || 'Expense';
         const expenseText = `    ${desc}`;
 
-        // Split text to max width of 115mm to prevent overlap with amount column at 150mm
-        const wrappedLines = doc.splitTextToSize(expenseText, 115);
+        // Split text to max width of 110mm to prevent overlap with amount column at 150mm
+        const wrappedLines = doc.splitTextToSize(expenseText, 110);
         doc.text(wrappedLines, 30, yPosition);
 
         // Amount aligns with the first line of wrapped text
@@ -339,8 +339,8 @@ export async function generateSettlementStatementPDF(
           lienText += ` (reduced from ${formatCurrency(lien.originalAmount)})`;
         }
 
-        // Split text to max width of 115mm to prevent overlap with amount column at 150mm
-        const wrappedLines = doc.splitTextToSize(lienText, 115);
+        // Split text to max width of 110mm to prevent overlap with amount column at 150mm
+        const wrappedLines = doc.splitTextToSize(lienText, 110);
         doc.text(wrappedLines, 30, yPosition);
 
         // Amount aligns with the first line of wrapped text
@@ -377,8 +377,8 @@ export async function generateSettlementStatementPDF(
         const desc = deduction.description.trim() || 'Deduction';
         const deductionText = `    ${desc}`;
 
-        // Split text to max width of 115mm to prevent overlap with amount column at 150mm
-        const wrappedLines = doc.splitTextToSize(deductionText, 115);
+        // Split text to max width of 110mm to prevent overlap with amount column at 150mm
+        const wrappedLines = doc.splitTextToSize(deductionText, 110);
         doc.text(wrappedLines, 30, yPosition);
 
         // Amount aligns with the first line of wrapped text
@@ -439,7 +439,7 @@ I also have been informed that any settlement proceeds are subjected to Departme
   // Split text to fit within margins (170mm width)
   const splitText = doc.splitTextToSize(authorizationText, 170);
   doc.text(splitText, leftMargin, yPosition);
-  yPosition += (splitText.length * 5) + 10;
+  yPosition += 10;
 
   // Certification statement
   doc.text('I certify that I have read the foregoing and agree with its contents.', leftMargin, yPosition);
