@@ -153,7 +153,7 @@ export function GLSettlementCalculator() {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Client Information
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label htmlFor="gl-attorney-name" className="input-label">
               Attorney Name
@@ -177,7 +177,63 @@ export function GLSettlementCalculator() {
               value={clientInfo.clientName}
               onChange={(e) => updateClientInfo('clientName', e.target.value)}
               className="w-full"
-              placeholder="Client Name"
+              placeholder="John Doe"
+            />
+          </div>
+          <div>
+            <label htmlFor="gl-address" className="input-label">
+              Address
+            </label>
+            <input
+              type="text"
+              id="gl-address"
+              value={clientInfo.address || ''}
+              onChange={(e) => updateClientInfo('address', e.target.value)}
+              className="w-full"
+              placeholder="123 Main Street"
+            />
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <div className="col-span-2">
+              <label htmlFor="gl-city" className="input-label">
+                City
+              </label>
+              <input
+                type="text"
+                id="gl-city"
+                value={clientInfo.city || ''}
+                onChange={(e) => updateClientInfo('city', e.target.value)}
+                className="w-full"
+                placeholder="Boston"
+              />
+            </div>
+            <div>
+              <label htmlFor="gl-state" className="input-label">
+                State
+              </label>
+              <input
+                type="text"
+                id="gl-state"
+                value={clientInfo.state || ''}
+                onChange={(e) => updateClientInfo('state', e.target.value)}
+                className="w-full"
+                placeholder="MA"
+                maxLength={2}
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="gl-zip" className="input-label">
+              ZIP Code
+            </label>
+            <input
+              type="text"
+              id="gl-zip"
+              value={clientInfo.zipCode || ''}
+              onChange={(e) => updateClientInfo('zipCode', e.target.value)}
+              className="w-full"
+              placeholder="02101"
+              maxLength={10}
             />
           </div>
           <div>

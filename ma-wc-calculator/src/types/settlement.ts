@@ -45,6 +45,10 @@ export interface ClientInfo {
   clientName: string;
   dateOfInjury?: string;
   date: string;
+  address?: string;
+  city?: string;
+  state?: string;
+  zipCode?: string;
 }
 
 export interface SettlementAllocation {

@@ -195,7 +195,7 @@ export function downloadBlob(blob: Blob, filename: string): void {
  */
 export async function generateSettlementStatementPDF(
   settlementData: SettlementStatementData,
-  clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string }
+  clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string; address?: string; city?: string; state?: string; zipCode?: string }
 ): Promise<string> {
   const doc = new jsPDF();
   const pageHeight = 280; // Safe page height to avoid overflow
@@ -238,9 +238,15 @@ export async function generateSettlementStatementPDF(
   doc.setFontSize(11);
   doc.text(clientName, leftMargin, yPosition);
   yPosition += 6;
-  doc.text('ADDRESS', leftMargin, yPosition);
+
+  const address = clientInfo?.address || 'ADDRESS';
+  doc.text(address, leftMargin, yPosition);
   yPosition += 6;
-  doc.text('CITY, STATE ZIP', leftMargin, yPosition);
+
+  const city = clientInfo?.city || 'CITY';
+  const state = clientInfo?.state || 'STATE';
+  const zipCode = clientInfo?.zipCode || 'ZIP';
+  doc.text(`${city}, ${state} ${zipCode}`, leftMargin, yPosition);
   yPosition += 15;
 
   // Re: line
@@ -280,11 +286,19 @@ export async function generateSettlementStatementPDF(
 
     settlementData.expenses.forEach(expense => {
       if (expense.amount > 0) {
-        checkPageBreak(6);
+        checkPageBreak(10); // Increase space check for potential wrapped lines
         const desc = expense.description.trim() || 'Expense';
-        doc.text(`    ${desc}`, 30, yPosition);
+        const expenseText = `    ${desc}`;
+
+        // Split text to max width of 115mm to prevent overlap with amount column at 150mm
+        const wrappedLines = doc.splitTextToSize(expenseText, 115);
+        doc.text(wrappedLines, 30, yPosition);
+
+        // Amount aligns with the first line of wrapped text
         doc.text(formatCurrency(expense.amount), 150, yPosition, { align: 'right' });
-        yPosition += 5;
+
+        // Advance yPosition by number of lines (each line ~5mm)
+        yPosition += (wrappedLines.length * 5);
       }
     });
 
@@ -318,15 +332,22 @@ export async function generateSettlementStatementPDF(
     // List each lien with reduction info
     settlementData.liens.forEach(lien => {
       if (lien.reducedAmount > 0) {
-        checkPageBreak(6);
+        checkPageBreak(10); // Increase space check for potential wrapped lines
         const desc = lien.description.trim() || 'Lien';
         let lienText = `    ${desc}`;
         if (lien.originalAmount > lien.reducedAmount) {
           lienText += ` (reduced from ${formatCurrency(lien.originalAmount)})`;
         }
-        doc.text(lienText, 30, yPosition);
+
+        // Split text to max width of 115mm to prevent overlap with amount column at 150mm
+        const wrappedLines = doc.splitTextToSize(lienText, 115);
+        doc.text(wrappedLines, 30, yPosition);
+
+        // Amount aligns with the first line of wrapped text
         doc.text(formatCurrency(lien.reducedAmount), 150, yPosition, { align: 'right' });
-        yPosition += 5;
+
+        // Advance yPosition by number of lines (each line ~5mm)
+        yPosition += (wrappedLines.length * 5);
       }
     });
 
@@ -352,11 +373,19 @@ export async function generateSettlementStatementPDF(
 
     settlementData.deductions.forEach(deduction => {
       if (deduction.amount > 0) {
-        checkPageBreak(6);
+        checkPageBreak(10); // Increase space check for potential wrapped lines
         const desc = deduction.description.trim() || 'Deduction';
-        doc.text(`    ${desc}`, 30, yPosition);
+        const deductionText = `    ${desc}`;
+
+        // Split text to max width of 115mm to prevent overlap with amount column at 150mm
+        const wrappedLines = doc.splitTextToSize(deductionText, 115);
+        doc.text(wrappedLines, 30, yPosition);
+
+        // Amount aligns with the first line of wrapped text
         doc.text(formatCurrency(deduction.amount), 150, yPosition, { align: 'right' });
-        yPosition += 5;
+
+        // Advance yPosition by number of lines (each line ~5mm)
+        yPosition += (wrappedLines.length * 5);
       }
     });
 
@@ -473,12 +502,16 @@ I also have been informed that any settlement proceeds are subjected to Departme
  */
 export function generateSettlementStatementExcel(
   settlementData: SettlementStatementData,
-  clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string }
+  clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string; address?: string; city?: string; state?: string; zipCode?: string }
 ): Blob {
   const wb = XLSX.utils.book_new();
 
   const clientName = clientInfo?.clientName || clientInfo?.name || 'CLIENT NAME';
   const attorneyName = clientInfo?.attorneyName || clientInfo?.attorney || '';
+  const address = clientInfo?.address || 'ADDRESS';
+  const city = clientInfo?.city || 'CITY';
+  const state = clientInfo?.state || 'STATE';
+  const zipCode = clientInfo?.zipCode || 'ZIP';
 
   // Create settlement distribution data
   const wsData = [
@@ -486,6 +519,8 @@ export function generateSettlementStatementExcel(
     [''],
     ['Attorney:', attorneyName],
     ['Client:', clientName],
+    ['Address:', address],
+    ['City, State ZIP:', `${city}, ${state} ${zipCode}`],
     ['Date of Injury:', clientInfo?.dateOfInjury || ''],
     ['Date:', clientInfo?.date || new Date().toLocaleDateString()],
     [''],
@@ -580,7 +615,7 @@ export function generateSettlementStatementExcel(
  */
 export async function generateSettlementStatementWord(
   settlementData: SettlementStatementData,
-  clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string }
+  clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string; address?: string; city?: string; state?: string; zipCode?: string }
 ): Promise<Blob> {
   const children: any[] = [
     new Paragraph({
@@ -592,11 +627,17 @@ export async function generateSettlementStatementWord(
 
   const clientName = clientInfo?.clientName || clientInfo?.name || 'CLIENT NAME';
   const attorneyName = clientInfo?.attorneyName || clientInfo?.attorney || '';
+  const address = clientInfo?.address || 'ADDRESS';
+  const city = clientInfo?.city || 'CITY';
+  const state = clientInfo?.state || 'STATE';
+  const zipCode = clientInfo?.zipCode || 'ZIP';
 
   // Client info
   const infoRows = [
     [`Attorney: ${attorneyName}`],
     [`Client: ${clientName}`],
+    [`Address: ${address}`],
+    [`City, State ZIP: ${city}, ${state} ${zipCode}`],
     [`Date of Injury: ${clientInfo?.dateOfInjury || ''}`],
     [`Date: ${clientInfo?.date || new Date().toLocaleDateString()}`]
   ];
