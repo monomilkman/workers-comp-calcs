@@ -290,10 +290,12 @@ export function MVASettlementCalculator() {
                     <div className="relative">
                       <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
                       <input
-                        type="text"
-                        value={expense.amount > 0 ? expense.amount.toString() : ''}
-                        onChange={(e) => updateExpense(expense.id, 'amount', parseCurrency(e.target.value))}
+                        type="number"
+                        value={expense.amount || ''}
+                        onChange={(e) => updateExpense(expense.id, 'amount', parseFloat(e.target.value) || 0)}
                         placeholder="0.00"
+                        step="0.01"
+                        min="0"
                         className="pl-6 w-full"
                       />
                     </div>
@@ -355,10 +357,12 @@ export function MVASettlementCalculator() {
                   <div className="relative">
                     <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
                     <input
-                      type="text"
-                      value={lien.originalAmount > 0 ? lien.originalAmount.toString() : ''}
-                      onChange={(e) => updateLien(lien.id, 'originalAmount', parseCurrency(e.target.value))}
+                      type="number"
+                      value={lien.originalAmount || ''}
+                      onChange={(e) => updateLien(lien.id, 'originalAmount', parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
+                      step="0.01"
+                      min="0"
                       className="pl-6 w-full"
                     />
                   </div>
@@ -368,10 +372,12 @@ export function MVASettlementCalculator() {
                   <div className="relative">
                     <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
                     <input
-                      type="text"
-                      value={lien.reducedAmount > 0 ? lien.reducedAmount.toString() : ''}
-                      onChange={(e) => updateLien(lien.id, 'reducedAmount', parseCurrency(e.target.value))}
+                      type="number"
+                      value={lien.reducedAmount || ''}
+                      onChange={(e) => updateLien(lien.id, 'reducedAmount', parseFloat(e.target.value) || 0)}
                       placeholder="0.00"
+                      step="0.01"
+                      min="0"
                       className="pl-6 w-full"
                     />
                   </div>
