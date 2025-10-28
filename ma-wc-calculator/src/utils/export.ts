@@ -259,7 +259,7 @@ export async function generateSettlementStatementPDF(
   // Title
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('"DISTRIBUTION OF SETTLEMENT PROCEEDS"', leftMargin, yPosition);
+  doc.text('"DISTRIBUTION OF SETTLEMENT PROCEEDS"', 105, yPosition, { align: 'center' });
   doc.setFont('helvetica', 'normal');
   yPosition += 12;
 
@@ -267,7 +267,7 @@ export async function generateSettlementStatementPDF(
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
   doc.text('Total Settlement', leftMargin, yPosition);
-  doc.text(formatCurrency(settlementData.proposedAmount), 150, yPosition, { align: 'right' });
+  doc.text(formatCurrency(settlementData.proposedAmount), 170, yPosition, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   yPosition += 10;
 
@@ -290,12 +290,12 @@ export async function generateSettlementStatementPDF(
         const desc = expense.description.trim() || 'Expense';
         const expenseText = `    ${desc}`;
 
-        // Split text to max width of 110mm to prevent overlap with amount column at 150mm
+        // Split text to max width of 110mm to prevent overlap with amount column at 170mm
         const wrappedLines = doc.splitTextToSize(expenseText, 110);
         doc.text(wrappedLines, 30, yPosition);
 
         // Amount aligns with the first line of wrapped text
-        doc.text(formatCurrency(expense.amount), 150, yPosition, { align: 'right' });
+        doc.text(formatCurrency(expense.amount), 170, yPosition, { align: 'right' });
 
         // Advance yPosition by number of lines (each line ~5mm)
         yPosition += (wrappedLines.length * 5);
@@ -306,7 +306,7 @@ export async function generateSettlementStatementPDF(
       checkPageBreak(6);
       doc.setFont('helvetica', 'bold');
       doc.text('    Total Expenses:', 30, yPosition);
-      doc.text(formatCurrency(totalExpenses), 150, yPosition, { align: 'right' });
+      doc.text(formatCurrency(totalExpenses), 170, yPosition, { align: 'right' });
       doc.setFont('helvetica', 'normal');
       yPosition += 8;
     }
@@ -316,7 +316,7 @@ export async function generateSettlementStatementPDF(
     if (totalExpenses > 0) {
       checkPageBreak(6);
       doc.text(`    Attorney Expenses`, 30, yPosition);
-      doc.text(formatCurrency(totalExpenses), 150, yPosition, { align: 'right' });
+      doc.text(formatCurrency(totalExpenses), 170, yPosition, { align: 'right' });
       yPosition += 8;
     }
   }
@@ -339,12 +339,12 @@ export async function generateSettlementStatementPDF(
           lienText += ` (reduced from ${formatCurrency(lien.originalAmount)})`;
         }
 
-        // Split text to max width of 110mm to prevent overlap with amount column at 150mm
+        // Split text to max width of 110mm to prevent overlap with amount column at 170mm
         const wrappedLines = doc.splitTextToSize(lienText, 110);
         doc.text(wrappedLines, 30, yPosition);
 
         // Amount aligns with the first line of wrapped text
-        doc.text(formatCurrency(lien.reducedAmount), 150, yPosition, { align: 'right' });
+        doc.text(formatCurrency(lien.reducedAmount), 170, yPosition, { align: 'right' });
 
         // Advance yPosition by number of lines (each line ~5mm)
         yPosition += (wrappedLines.length * 5);
@@ -357,7 +357,7 @@ export async function generateSettlementStatementPDF(
       checkPageBreak(6);
       doc.setFont('helvetica', 'bold');
       doc.text('    Total Liens:', 30, yPosition);
-      doc.text(formatCurrency(totalLiens), 150, yPosition, { align: 'right' });
+      doc.text(formatCurrency(totalLiens), 170, yPosition, { align: 'right' });
       doc.setFont('helvetica', 'normal');
       yPosition += 8;
     }
@@ -377,12 +377,12 @@ export async function generateSettlementStatementPDF(
         const desc = deduction.description.trim() || 'Deduction';
         const deductionText = `    ${desc}`;
 
-        // Split text to max width of 110mm to prevent overlap with amount column at 150mm
+        // Split text to max width of 110mm to prevent overlap with amount column at 170mm
         const wrappedLines = doc.splitTextToSize(deductionText, 110);
         doc.text(wrappedLines, 30, yPosition);
 
         // Amount aligns with the first line of wrapped text
-        doc.text(formatCurrency(deduction.amount), 150, yPosition, { align: 'right' });
+        doc.text(formatCurrency(deduction.amount), 170, yPosition, { align: 'right' });
 
         // Advance yPosition by number of lines (each line ~5mm)
         yPosition += (wrappedLines.length * 5);
@@ -394,7 +394,7 @@ export async function generateSettlementStatementPDF(
       checkPageBreak(6);
       doc.setFont('helvetica', 'bold');
       doc.text('    Total Deductions:', 30, yPosition);
-      doc.text(formatCurrency(totalDeductions), 150, yPosition, { align: 'right' });
+      doc.text(formatCurrency(totalDeductions), 170, yPosition, { align: 'right' });
       doc.setFont('helvetica', 'normal');
       yPosition += 8;
     }
@@ -405,7 +405,7 @@ export async function generateSettlementStatementPDF(
   doc.setFont('helvetica', 'bold');
   const feePercent = ((settlementData.actualFee / settlementData.proposedAmount) * 100).toFixed(6);
   doc.text(`Legal Fee ${feePercent}%`, leftMargin, yPosition);
-  doc.text(formatCurrency(settlementData.actualFee), 150, yPosition, { align: 'right' });
+  doc.text(formatCurrency(settlementData.actualFee), 170, yPosition, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   yPosition += 12;
 
@@ -417,7 +417,7 @@ export async function generateSettlementStatementPDF(
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
   doc.text('TOTAL DUE CLIENT:', leftMargin, yPosition);
-  doc.text(formatCurrency(settlementData.netToEmployee), 150, yPosition, { align: 'right' });
+  doc.text(formatCurrency(settlementData.netToEmployee), 170, yPosition, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   yPosition += 20;
 
