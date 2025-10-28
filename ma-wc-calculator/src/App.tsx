@@ -1,13 +1,14 @@
-import { useState, useEffect, lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { useLocalStorage } from './hooks/useLocalStorage';
 import { useCalculations } from './hooks/useCalculations';
 import { formatCurrency } from './utils/money';
 import { Clock, FileText } from 'lucide-react';
 import { Toaster } from 'sonner';
-import type { AppState, LedgerEntry, StateRateRow, ProrationMode } from './types';
+import type { AppState } from './types';
 
 // Layout Components
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';
+import { CalculatorProvider, useCalculatorContext } from './contexts/CalculatorContext';
 import { Sidebar, type NavigationTab } from './components/Layout/Sidebar';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { Spinner } from './components/UI/Spinner';
@@ -30,38 +31,26 @@ function AppContent() {
   // Theme management
   const { theme, toggleTheme } = useTheme();
 
-  // State management
-  const [aww, setAww] = useLocalStorage('ma_wc_aww', 1000);
-  const [dateOfInjury, setDateOfInjury] = useLocalStorage('ma_wc_doi', '2025-01-02');
-  const [earningCapacity, setEarningCapacity] = useLocalStorage('ma_wc_ec', 600);
-  const [ledger, setLedger] = useLocalStorage<LedgerEntry[]>('ma_wc_ledger', []);
-  const [prorationMode, setProrationMode] = useLocalStorage<ProrationMode>('ma_wc_proration', 'days');
-  const [stateRateTable, setStateRateTable] = useState<StateRateRow[]>([]);
-  const [activeTab, setActiveTab] = useLocalStorage<NavigationTab>('ma_wc_active_tab', 'calculator');
+  // Calculator state from context
+  const {
+    aww,
+    dateOfInjury,
+    earningCapacity,
+    prorationMode,
+    stateRateTable,
+    ledger,
+    setAww,
+    setDateOfInjury,
+    setEarningCapacity,
+    setProrationMode,
+    setStateRateTable,
+    addEntry,
+    updateEntry,
+    deleteEntry,
+  } = useCalculatorContext();
 
-  // Load state rate table on component mount
-  useEffect(() => {
-    const loadStateRates = async () => {
-      try {
-        const response = await fetch('/state_rates.json');
-        const ratesData = await response.json();
-        const rates = ratesData.rates || ratesData;
-        setStateRateTable(rates);
-      } catch (error) {
-        console.error('Error loading state rates:', error);
-        // Fallback to hardcoded rates
-        setStateRateTable([{
-          effective_from: '2024-10-01',
-          effective_to: '2025-09-30',
-          state_min: 365.83,
-          state_max: 1500.00,
-          source_url: 'https://www.mass.gov/info-details/minimum-and-maximum-compensation-rates'
-        }]);
-      }
-    };
-    
-    loadStateRates();
-  }, []);
+  // Navigation state (kept separate as it's UI-specific, not calculator data)
+  const [activeTab, setActiveTab] = useLocalStorage<NavigationTab>('ma_wc_active_tab', 'calculator');
 
   // Use calculations hook
   const {
@@ -72,21 +61,6 @@ function AppContent() {
     combined35Usage,
     totalDollarsPaid
   } = useCalculations(aww, dateOfInjury, earningCapacity, stateRateTable, ledger);
-
-  // Ledger management functions
-  const handleAddEntry = (entry: LedgerEntry) => {
-    setLedger(prev => [...prev, entry]);
-  };
-
-  const handleUpdateEntry = (updatedEntry: LedgerEntry) => {
-    setLedger(prev => prev.map(entry => 
-      entry.id === updatedEntry.id ? updatedEntry : entry
-    ));
-  };
-
-  const handleDeleteEntry = (id: string) => {
-    setLedger(prev => prev.filter(entry => entry.id !== id));
-  };
 
   // Create app state for export
   const appState: AppState = {
@@ -219,9 +193,9 @@ function AppContent() {
               dateOfInjury={dateOfInjury}
               stateRateTable={stateRateTable}
               prorationMode={prorationMode}
-              onAddEntry={handleAddEntry}
-              onUpdateEntry={handleUpdateEntry}
-              onDeleteEntry={handleDeleteEntry}
+              onAddEntry={addEntry}
+              onUpdateEntry={updateEntry}
+              onDeleteEntry={deleteEntry}
             />
           </div>
         );
@@ -372,7 +346,9 @@ function App() {
   return (
     <ErrorBoundary>
       <ThemeProvider>
-        <AppContent />
+        <CalculatorProvider>
+          <AppContent />
+        </CalculatorProvider>
       </ThemeProvider>
     </ErrorBoundary>
   );
