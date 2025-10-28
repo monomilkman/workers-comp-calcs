@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { formatCurrency, parseCurrency } from '../utils/money';
 import { generateSettlementStatementPDF, generateSettlementStatementExcel, generateSettlementStatementWord, generateBenefitsRemainingPDF, generateBenefitsRemainingExcel, generateBenefitsRemainingWord, downloadBlob } from '../utils/export';
-import { Plus, Trash2, Download, Calculator, FileText, File, FileSpreadsheet, Info } from 'lucide-react';
+import { Plus, Trash2, Download, Calculator, FileText, File, FileSpreadsheet, Info, ChevronDown, ChevronUp } from 'lucide-react';
 import type { BenefitCalculation, RemainingEntitlement } from '../types';
 import type { BenefitsRemainingOptions, BenefitsRemainingData } from '../types/settlement';
 
@@ -987,10 +987,15 @@ export function SettlementCalculator({
           </div>
           <button
             onClick={() => setShowBenefitsModal(!showBenefitsModal)}
-            className="btn-primary flex items-center space-x-2"
+            className="btn-secondary flex items-center space-x-2 transition-all duration-200"
           >
             <FileSpreadsheet className="h-4 w-4" />
-            <span>{showBenefitsModal ? 'Hide Options' : 'Generate Sheet'}</span>
+            <span>Customize</span>
+            {showBenefitsModal ? (
+              <ChevronUp className="h-4 w-4" />
+            ) : (
+              <ChevronDown className="h-4 w-4" />
+            )}
           </button>
         </div>
 
@@ -1088,7 +1093,7 @@ export function SettlementCalculator({
                             onClick={handleUseProposedSettlement}
                             className="btn-secondary whitespace-nowrap"
                           >
-                            Use ${formatCurrency(proposedAmount)}
+                            Use {formatCurrency(proposedAmount)}
                           </button>
                         )}
                       </div>
@@ -1319,35 +1324,35 @@ export function SettlementCalculator({
             </div>
 
             {/* Download Buttons */}
-            <div className="border-t border-gray-200 dark:border-gray-600 pt-4">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="border-t border-gray-200 dark:border-gray-600 pt-6">
+              <div className="space-y-4">
                 <div>
-                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Ready to Generate</p>
+                  <h4 className="text-sm font-semibold text-gray-900 dark:text-gray-100 mb-1">Ready to Generate</h4>
                   <p className="text-xs text-gray-600 dark:text-gray-400">
-                    Choose your preferred format below
+                    Choose your preferred format to download the benefits summary
                   </p>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                   <button
                     onClick={handleDownloadBenefitsPDF}
-                    className="btn-primary flex items-center space-x-2"
+                    className="btn-primary flex items-center justify-center space-x-2 py-3 shadow-md hover:shadow-lg transition-shadow"
                   >
-                    <Download className="h-4 w-4" />
-                    <span>PDF</span>
+                    <Download className="h-5 w-5" />
+                    <span className="font-medium">PDF</span>
                   </button>
                   <button
                     onClick={handleDownloadBenefitsExcel}
-                    className="btn-secondary flex items-center space-x-2"
+                    className="btn-secondary flex items-center justify-center space-x-2 py-3 shadow-sm hover:shadow-md transition-shadow"
                   >
-                    <FileText className="h-4 w-4" />
-                    <span>Excel</span>
+                    <FileSpreadsheet className="h-5 w-5" />
+                    <span className="font-medium">Excel</span>
                   </button>
                   <button
                     onClick={handleDownloadBenefitsWord}
-                    className="btn-secondary flex items-center space-x-2"
+                    className="btn-secondary flex items-center justify-center space-x-2 py-3 shadow-sm hover:shadow-md transition-shadow"
                   >
-                    <File className="h-4 w-4" />
-                    <span>Word</span>
+                    <File className="h-5 w-5" />
+                    <span className="font-medium">Word</span>
                   </button>
                 </div>
               </div>

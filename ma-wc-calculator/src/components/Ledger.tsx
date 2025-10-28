@@ -165,79 +165,79 @@ export function Ledger({
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+            <thead className="bg-gray-50 dark:bg-gray-700">
               <tr>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Type
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Period
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Weeks
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Weekly Rate
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Dollars Paid
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
               {sortedLedger.map((entry) => (
-                <tr 
+                <tr
                   key={entry.id}
-                  className={`hover:bg-gray-50 ${isEntryOverlapping(entry.id) ? 'bg-yellow-25 border-l-4 border-yellow-400' : ''}`}
+                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${isEntryOverlapping(entry.id) ? 'bg-yellow-25 dark:bg-yellow-900/20 border-l-4 border-yellow-400' : ''}`}
                 >
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       {getBenefitTypeBadge(entry.type)}
                       {isEntryOverlapping(entry.id) && (
-                        <span className="ml-2 text-yellow-600" title="Overlapping dates">
+                        <span className="ml-2 text-yellow-600 dark:text-yellow-400" title="Overlapping dates">
                           ⚠️
                         </span>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     <div>
                       <div>{entry.start}</div>
-                      <div className="text-gray-500 text-xs">
+                      <div className="text-gray-500 dark:text-gray-400 text-xs">
                         to {entry.end || 'Present'}
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     <div>
                       <div className="font-medium">{entry.weeks.toFixed(2)}</div>
-                      <div className="text-xs text-gray-500">
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
                         ({Math.floor(entry.weeks)} full + {(entry.weeks % 1).toFixed(2)} partial)
                       </div>
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                     <div>
                       <div className="font-medium">{formatCurrency(entry.final_weekly)}</div>
                       {entry.raw_weekly !== entry.final_weekly && (
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           (Raw: {formatCurrency(entry.raw_weekly)})
                         </div>
                       )}
                     </div>
                   </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                     {formatCurrency(entry.dollars_paid)}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                     <div className="flex space-x-2">
                       <button
                         onClick={() => handleEditEntry(entry)}
-                        className="text-blue-600 hover:text-blue-900"
+                        className="text-blue-600 dark:text-blue-400 hover:text-blue-900 dark:hover:text-blue-300"
                       >
                         Edit
                       </button>
@@ -247,7 +247,7 @@ export function Ledger({
                             onDeleteEntry(entry.id);
                           }
                         }}
-                        className="text-red-600 hover:text-red-900"
+                        className="text-red-600 dark:text-red-400 hover:text-red-900 dark:hover:text-red-300"
                       >
                         Delete
                       </button>
@@ -262,27 +262,27 @@ export function Ledger({
 
       {/* Summary */}
       {sortedLedger.length > 0 && (
-        <div className="mt-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <div className="mt-6 p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div>
-              <span className="text-gray-600">Total Entries:</span>
-              <div className="font-medium text-gray-900">{ledger.length}</div>
+              <span className="text-gray-600 dark:text-gray-400">Total Entries:</span>
+              <div className="font-medium text-gray-900 dark:text-gray-100">{ledger.length}</div>
             </div>
             <div>
-              <span className="text-gray-600">Total Weeks:</span>
-              <div className="font-medium text-gray-900">
+              <span className="text-gray-600 dark:text-gray-400">Total Weeks:</span>
+              <div className="font-medium text-gray-900 dark:text-gray-100">
                 {ledger.reduce((sum, entry) => sum + entry.weeks, 0).toFixed(2)}
               </div>
             </div>
             <div>
-              <span className="text-gray-600">Total Paid:</span>
-              <div className="font-medium text-gray-900">
+              <span className="text-gray-600 dark:text-gray-400">Total Paid:</span>
+              <div className="font-medium text-gray-900 dark:text-gray-100">
                 {formatCurrency(ledger.reduce((sum, entry) => sum + entry.dollars_paid, 0))}
               </div>
             </div>
             <div>
-              <span className="text-gray-600">Proration Mode:</span>
-              <div className="font-medium text-gray-900 capitalize">{prorationMode}</div>
+              <span className="text-gray-600 dark:text-gray-400">Proration Mode:</span>
+              <div className="font-medium text-gray-900 dark:text-gray-100 capitalize">{prorationMode}</div>
             </div>
           </div>
         </div>

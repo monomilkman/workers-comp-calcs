@@ -148,7 +148,7 @@ export function DemandBuilder({
 
   return (
     <div className="card">
-      <h3 className="text-lg font-semibold text-gray-900 mb-4">
+      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
         Demand Builder
       </h3>
 
@@ -162,12 +162,12 @@ export function DemandBuilder({
                                    input && (input.years * 52) > entitlement.weeksRemaining;
 
           return (
-            <div key={benefit.type} className="p-4 border border-gray-200 rounded-lg">
+            <div key={benefit.type} className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-800">
               <div className="flex items-center justify-between mb-3">
-                <h4 className="font-medium text-gray-900">
+                <h4 className="font-medium text-gray-900 dark:text-gray-100">
                   {getBenefitTitle(benefit.type)}
                 </h4>
-                <span className="text-sm text-gray-600">
+                <span className="text-sm text-gray-600 dark:text-gray-400">
                   {formatCurrency(benefit.finalWeekly)}/week
                 </span>
               </div>
@@ -175,7 +175,7 @@ export function DemandBuilder({
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
                 {/* Years Input */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Desired Years
                   </label>
                   <input
@@ -191,7 +191,7 @@ export function DemandBuilder({
 
                 {/* Quick Fill Buttons */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Quick Fill
                   </label>
                   <div className="flex space-x-2">
@@ -199,7 +199,7 @@ export function DemandBuilder({
                       <button
                         type="button"
                         onClick={() => handleQuickFill(benefit.type, 'remaining')}
-                        className="text-xs px-2 py-1 bg-green-100 text-green-800 rounded hover:bg-green-200"
+                        className="text-xs px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 rounded hover:bg-green-200 dark:hover:bg-green-900/50"
                       >
                         Remaining: {(entitlement.weeksRemaining / 52).toFixed(1)}y
                       </button>
@@ -208,7 +208,7 @@ export function DemandBuilder({
                       <button
                         type="button"
                         onClick={() => handleQuickFill(benefit.type, 'statutory')}
-                        className="text-xs px-2 py-1 bg-blue-100 text-blue-800 rounded hover:bg-blue-200"
+                        className="text-xs px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 rounded hover:bg-blue-200 dark:hover:bg-blue-900/50"
                       >
                         Max: {(benefit.statutoryMaxWeeks / 52).toFixed(1)}y
                       </button>
@@ -218,11 +218,11 @@ export function DemandBuilder({
 
                 {/* Calculated Amount */}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
                     Amount
                   </label>
-                  <div className="text-lg font-semibold text-gray-900">
-                    {input && input.years > 0 
+                  <div className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    {input && input.years > 0
                       ? formatCurrency(benefit.finalWeekly * input.years * 52)
                       : formatCurrency(0)
                     }
@@ -232,8 +232,8 @@ export function DemandBuilder({
 
               {/* Warnings */}
               {(exceedsStatutory || exceedsRemaining) && (
-                <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-md">
-                  <div className="text-sm text-red-700">
+                <div className="mt-3 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+                  <div className="text-sm text-red-700 dark:text-red-400">
                     {exceedsStatutory && (
                       <div>⚠️ Exceeds statutory maximum of {benefit.statutoryMaxWeeks} weeks ({(benefit.statutoryMaxWeeks! / 52).toFixed(1)} years)</div>
                     )}
@@ -250,8 +250,8 @@ export function DemandBuilder({
 
       {/* Combined 34 + 35 Warning */}
       {exceedsCombinedLimit && (
-        <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="text-sm text-yellow-800">
+        <div className="mb-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+          <div className="text-sm text-yellow-800 dark:text-yellow-300">
             <strong>⚠️ Combined 34 + 35 Limit Exceeded</strong>
             <p className="mt-1">
               Total requested years for Sections 34, 35, and 35 EC: <strong>{getTotalCombined34And35Years().toFixed(2)} years</strong>
@@ -262,12 +262,12 @@ export function DemandBuilder({
       )}
 
       {/* Section 36 Scarring/Disfigurement */}
-      <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
-        <h4 className="font-medium text-gray-900 mb-3">
+      <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg">
+        <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">
           Section 36 (Scarring/Disfigurement)
         </h4>
         <div className="relative">
-          <span className="absolute left-3 top-2 text-gray-500">$</span>
+          <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
           <input
             type="text"
             value={section36Input}
@@ -279,7 +279,7 @@ export function DemandBuilder({
       </div>
 
       {/* Section 28 Penalty */}
-      <div className="mb-6 p-4 bg-gray-50 border border-gray-200 rounded-lg">
+      <div className="mb-6 p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg">
         <div className="flex items-center">
           <input
             type="checkbox"
@@ -288,18 +288,18 @@ export function DemandBuilder({
             onChange={(e) => setSection28Applied(e.target.checked)}
             className="mr-3"
           />
-          <label htmlFor="section28" className="text-sm font-medium text-gray-900">
+          <label htmlFor="section28" className="text-sm font-medium text-gray-900 dark:text-gray-100">
             Apply Section 28 Penalty (2x multiplier)
           </label>
         </div>
-        <p className="mt-2 text-xs text-gray-600">
+        <p className="mt-2 text-xs text-gray-600 dark:text-gray-400">
           Section 28 penalty doubles the total demand amount for violations of compensation payment requirements.
         </p>
       </div>
 
       {/* Force Exceed Confirmation */}
       {showExceedWarning && (
-        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+        <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
           <div className="flex items-start">
             <input
               type="checkbox"
@@ -309,10 +309,10 @@ export function DemandBuilder({
               className="mr-3 mt-1"
             />
             <div>
-              <label htmlFor="force-exceed" className="text-sm font-medium text-red-800">
+              <label htmlFor="force-exceed" className="text-sm font-medium text-red-800 dark:text-red-300">
                 I understand that some requested amounts exceed statutory or remaining limits
               </label>
-              <p className="mt-1 text-xs text-red-700">
+              <p className="mt-1 text-xs text-red-700 dark:text-red-400">
                 Check this box to proceed with the demand calculation despite exceeding limits.
               </p>
             </div>
@@ -321,68 +321,68 @@ export function DemandBuilder({
       )}
 
       {/* Demand Calculation Results */}
-      {(demandCalculation.breakdowns.length > 0 || section36Amount > 0) && 
+      {(demandCalculation.breakdowns.length > 0 || section36Amount > 0) &&
        (!showExceedWarning || forceExceedConfirmed) && (
         <div className="space-y-4">
-          <h4 className="font-medium text-gray-900">Demand Calculation</h4>
+          <h4 className="font-medium text-gray-900 dark:text-gray-100">Demand Calculation</h4>
 
           {/* Breakdown Table */}
           {demandCalculation.breakdowns.length > 0 && (
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+                <thead className="bg-gray-50 dark:bg-gray-700">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Benefit Type
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Years/Weeks
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Weekly Rate
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Total Amount
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Status
                     </th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
+                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                   {demandCalculation.breakdowns.map((breakdown, index) => (
-                    <tr key={index} className="hover:bg-gray-50">
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={index} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {getBenefitTitle(breakdown.type)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         <div>
                           {breakdown.requestedYears.toFixed(2)} years
                         </div>
-                        <div className="text-xs text-gray-500">
+                        <div className="text-xs text-gray-500 dark:text-gray-400">
                           ({breakdown.requestedWeeks.toFixed(1)} weeks)
                         </div>
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900 dark:text-gray-100">
                         {formatCurrency(breakdown.weeklyRate)}
                       </td>
-                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-4 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-gray-100">
                         {formatCurrency(breakdown.totalAmount)}
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap">
                         <div className="space-y-1">
                           {breakdown.exceedsStatutory && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 text-red-800">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
                               Exceeds Statutory
                             </span>
                           )}
                           {breakdown.exceedsRemaining && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 text-yellow-800">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300">
                               Exceeds Remaining
                             </span>
                           )}
                           {!breakdown.exceedsStatutory && !breakdown.exceedsRemaining && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
                               Within Limits
                             </span>
                           )}
@@ -396,37 +396,37 @@ export function DemandBuilder({
           )}
 
           {/* Summary */}
-          <div className="p-4 bg-blue-50 border border-blue-200 rounded-lg">
+          <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="font-medium text-blue-900">Subtotal (Benefits):</span>
-                <span className="text-lg font-semibold text-blue-900">
+                <span className="font-medium text-blue-900 dark:text-blue-300">Subtotal (Benefits):</span>
+                <span className="text-lg font-semibold text-blue-900 dark:text-blue-300">
                   {formatCurrency(demandCalculation.subtotal)}
                 </span>
               </div>
-              
+
               {section36Amount > 0 && (
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-blue-900">Section 36 (Scarring):</span>
-                  <span className="text-lg font-semibold text-blue-900">
+                  <span className="font-medium text-blue-900 dark:text-blue-300">Section 36 (Scarring):</span>
+                  <span className="text-lg font-semibold text-blue-900 dark:text-blue-300">
                     {formatCurrency(section36Amount)}
                   </span>
                 </div>
               )}
-              
+
               {section28Applied && (
                 <div className="flex justify-between items-center">
-                  <span className="font-medium text-blue-900">Section 28 Penalty (2x):</span>
-                  <span className="text-sm text-blue-700">Applied to total</span>
+                  <span className="font-medium text-blue-900 dark:text-blue-300">Section 28 Penalty (2x):</span>
+                  <span className="text-sm text-blue-700 dark:text-blue-400">Applied to total</span>
                 </div>
               )}
-              
-              <div className="pt-2 border-t border-blue-300">
+
+              <div className="pt-2 border-t border-blue-300 dark:border-blue-700">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-bold text-blue-900">
+                  <span className="text-lg font-bold text-blue-900 dark:text-blue-100">
                     TOTAL DEMAND:
                   </span>
-                  <span className="text-2xl font-bold text-blue-900">
+                  <span className="text-2xl font-bold text-blue-900 dark:text-blue-100">
                     {formatCurrency(demandCalculation.grandTotal)}
                   </span>
                 </div>
