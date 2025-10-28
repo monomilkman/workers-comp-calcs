@@ -170,17 +170,17 @@ export function LedgerEditor({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onCancel} />
-        
-        <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white shadow-xl rounded-lg">
+        <div className="fixed inset-0 transition-opacity bg-gray-500 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-80" onClick={onCancel} />
+
+        <div className="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white dark:bg-gray-800 shadow-xl rounded-lg">
           <div className="flex justify-between items-center mb-6">
-            <h3 className="text-lg font-semibold text-gray-900">
+            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
               {entry ? 'Edit Ledger Entry' : 'Add Ledger Entry'}
             </h3>
             <button
               type="button"
               onClick={onCancel}
-              className="text-gray-400 hover:text-gray-600"
+              className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300"
             >
               <span className="sr-only">Close</span>
               <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -193,7 +193,7 @@ export function LedgerEditor({
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Benefit Type */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Benefit Type *
                 </label>
                 <select
@@ -208,16 +208,16 @@ export function LedgerEditor({
                     </option>
                   ))}
                 </select>
-                {errors.type && <p className="mt-1 text-sm text-red-600">{errors.type}</p>}
+                {errors.type && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.type}</p>}
               </div>
 
               {/* AWW Used */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   AWW Used
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500">$</span>
+                  <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
                   <input
                     type="text"
                     value={formData.aww_used.toString()}
@@ -226,14 +226,14 @@ export function LedgerEditor({
                     placeholder="1000.00"
                   />
                 </div>
-                {errors.aww_used && <p className="mt-1 text-sm text-red-600">{errors.aww_used}</p>}
+                {errors.aww_used && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.aww_used}</p>}
               </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Start Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Start Date *
                 </label>
                 <input
@@ -243,12 +243,12 @@ export function LedgerEditor({
                   className={errors.start ? 'border-red-500' : ''}
                   required
                 />
-                {errors.start && <p className="mt-1 text-sm text-red-600">{errors.start}</p>}
+                {errors.start && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.start}</p>}
               </div>
 
               {/* End Date */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   End Date
                 </label>
                 <input
@@ -263,28 +263,28 @@ export function LedgerEditor({
                     <input
                       type="checkbox"
                       checked={formData.isPresentDate}
-                      onChange={(e) => setFormData(prev => ({ 
-                        ...prev, 
+                      onChange={(e) => setFormData(prev => ({
+                        ...prev,
                         isPresentDate: e.target.checked,
                         end: e.target.checked ? '' : prev.end
                       }))}
                       className="mr-2"
                     />
-                    <span className="text-sm text-gray-700">Present (ongoing)</span>
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Present (ongoing)</span>
                   </label>
                 </div>
-                {errors.end && <p className="mt-1 text-sm text-red-600">{errors.end}</p>}
+                {errors.end && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.end}</p>}
               </div>
             </div>
 
             {/* Earning Capacity (only for Section 35 EC) */}
             {formData.type === '35ec' && (
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Earning Capacity Used *
                 </label>
                 <div className="relative">
-                  <span className="absolute left-3 top-2 text-gray-500">$</span>
+                  <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
                   <input
                     type="text"
                     value={formData.ec_used.toString()}
@@ -294,13 +294,13 @@ export function LedgerEditor({
                     required
                   />
                 </div>
-                {errors.ec_used && <p className="mt-1 text-sm text-red-600">{errors.ec_used}</p>}
+                {errors.ec_used && <p className="mt-1 text-sm text-red-600 dark:text-red-400">{errors.ec_used}</p>}
               </div>
             )}
 
             {/* Notes */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                 Notes
               </label>
               <textarea
@@ -314,31 +314,31 @@ export function LedgerEditor({
 
             {/* Calculated Values Preview */}
             {(formData.start && (formData.end || formData.isPresentDate)) && (
-              <div className="p-4 bg-gray-50 border border-gray-200 rounded-lg">
-                <h4 className="font-medium text-gray-900 mb-3">Calculated Values</h4>
+              <div className="p-4 bg-gray-50 dark:bg-gray-700/50 border border-gray-200 dark:border-gray-600 rounded-lg">
+                <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Calculated Values</h4>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-600">Weeks:</span>
-                    <div className="font-medium">{calculatedValues.weeks.toFixed(4)}</div>
+                    <span className="text-gray-600 dark:text-gray-400">Weeks:</span>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{calculatedValues.weeks.toFixed(4)}</div>
                   </div>
                   <div>
-                    <span className="text-gray-600">Raw Weekly:</span>
-                    <div className="font-medium">{formatCurrency(calculatedValues.raw_weekly)}</div>
+                    <span className="text-gray-600 dark:text-gray-400">Raw Weekly:</span>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(calculatedValues.raw_weekly)}</div>
                   </div>
                   <div>
-                    <span className="text-gray-600">Final Weekly:</span>
-                    <div className="font-medium">{formatCurrency(calculatedValues.final_weekly)}</div>
+                    <span className="text-gray-600 dark:text-gray-400">Final Weekly:</span>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(calculatedValues.final_weekly)}</div>
                   </div>
                   <div>
-                    <span className="text-gray-600">Dollars Paid:</span>
-                    <div className="font-medium">{formatCurrency(calculatedValues.dollars_paid)}</div>
+                    <span className="text-gray-600 dark:text-gray-400">Dollars Paid:</span>
+                    <div className="font-medium text-gray-900 dark:text-gray-100">{formatCurrency(calculatedValues.dollars_paid)}</div>
                   </div>
                 </div>
               </div>
             )}
 
             {/* Form Actions */}
-            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200">
+            <div className="flex justify-end space-x-3 pt-6 border-t border-gray-200 dark:border-gray-600">
               <button
                 type="button"
                 onClick={onCancel}
