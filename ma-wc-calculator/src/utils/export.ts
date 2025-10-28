@@ -1024,9 +1024,17 @@ export async function generateBenefitsRemainingPDF(
       doc.setFontSize(9);
 
       // Calculate what percentage of remaining benefits this represents
+      // Filter entitlements by selectedBenefitTypes to match what's shown in the benefits breakdown
+      const entitlementsToCount = data.remainingEntitlements.filter(entitlement => {
+        if (data.options.selectedBenefitTypes && data.options.selectedBenefitTypes.length > 0) {
+          return data.options.selectedBenefitTypes.includes(entitlement.type);
+        }
+        return true;
+      });
+
       // Use a Set to track benefit types we've already counted to avoid double-counting shared limits
       const countedSharedLimits = new Set<string>();
-      const totalRemainingValue = data.remainingEntitlements.reduce((sum, ent) => {
+      const totalRemainingValue = entitlementsToCount.reduce((sum, ent) => {
         if (!ent.isLifeBenefit && ent.dollarsRemaining) {
           // If this benefit shares a limit with others, only count it once
           if (ent.sharesLimitWith && ent.sharesLimitWith.length > 0) {
@@ -1237,9 +1245,17 @@ export function generateBenefitsRemainingExcel(
       wsData.push(['']);
 
       // Settlement analysis
+      // Filter entitlements by selectedBenefitTypes to match what's shown in the benefits breakdown
+      const entitlementsToCount = data.remainingEntitlements.filter(entitlement => {
+        if (data.options.selectedBenefitTypes && data.options.selectedBenefitTypes.length > 0) {
+          return data.options.selectedBenefitTypes.includes(entitlement.type);
+        }
+        return true;
+      });
+
       // Use a Set to track benefit types we've already counted to avoid double-counting shared limits
       const countedSharedLimits = new Set<string>();
-      const totalRemainingValue = data.remainingEntitlements.reduce((sum, ent) => {
+      const totalRemainingValue = entitlementsToCount.reduce((sum, ent) => {
         if (!ent.isLifeBenefit && ent.dollarsRemaining) {
           // If this benefit shares a limit with others, only count it once
           if (ent.sharesLimitWith && ent.sharesLimitWith.length > 0) {
@@ -1533,9 +1549,17 @@ export async function generateBenefitsRemainingWord(
       );
 
       // Settlement analysis
+      // Filter entitlements by selectedBenefitTypes to match what's shown in the benefits breakdown
+      const entitlementsToCount = data.remainingEntitlements.filter(entitlement => {
+        if (data.options.selectedBenefitTypes && data.options.selectedBenefitTypes.length > 0) {
+          return data.options.selectedBenefitTypes.includes(entitlement.type);
+        }
+        return true;
+      });
+
       // Use a Set to track benefit types we've already counted to avoid double-counting shared limits
       const countedSharedLimits = new Set<string>();
-      const totalRemainingValue = data.remainingEntitlements.reduce((sum, ent) => {
+      const totalRemainingValue = entitlementsToCount.reduce((sum, ent) => {
         if (!ent.isLifeBenefit && ent.dollarsRemaining) {
           // If this benefit shares a limit with others, only count it once
           if (ent.sharesLimitWith && ent.sharesLimitWith.length > 0) {
