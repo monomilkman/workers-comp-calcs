@@ -108,35 +108,39 @@ export function useCalculations(
     // Calculate combined 35 + 35EC usage for shared 4-year limit
     const combined35Weeks = weeksUsedByType['35'] + weeksUsedByType['35ec'];
     const combined35Remaining = Math.max(0, COMBINED_35_MAX_WEEKS - combined35Weeks);
-    
+
     return benefitCalculations.map(benefit => {
       const weeksUsed = weeksUsedByType[benefit.type];
       const isLifeBenefit = benefit.statutoryMaxWeeks === null;
-      
+
       let weeksRemaining: number | null = null;
       let dollarsRemaining: number | null = null;
       let effectiveMaxWeeks = benefit.statutoryMaxWeeks;
-      
+      let sharesLimitWith: BenefitType[] | undefined = undefined;
+
       if (!isLifeBenefit && benefit.statutoryMaxWeeks !== null) {
         if (benefit.type === '35' || benefit.type === '35ec') {
           // For Section 35 and 35EC, use shared limit
           effectiveMaxWeeks = COMBINED_35_MAX_WEEKS;
           weeksRemaining = combined35Remaining;
           dollarsRemaining = weeksRemaining * benefit.finalWeekly;
+          // Mark that these benefits share a limit
+          sharesLimitWith = benefit.type === '35' ? ['35ec'] : ['35'];
         } else {
           // For other types (like Section 34), use individual limits
           weeksRemaining = Math.max(0, benefit.statutoryMaxWeeks - weeksUsed);
           dollarsRemaining = weeksRemaining * benefit.finalWeekly;
         }
       }
-      
+
       return {
         type: benefit.type,
         statutoryMaxWeeks: effectiveMaxWeeks,
         weeksUsed: benefit.type === '35' || benefit.type === '35ec' ? combined35Weeks : weeksUsed,
         weeksRemaining,
         dollarsRemaining,
-        isLifeBenefit
+        isLifeBenefit,
+        sharesLimitWith
       };
     });
   }, [benefitCalculations, weeksUsedByType]);

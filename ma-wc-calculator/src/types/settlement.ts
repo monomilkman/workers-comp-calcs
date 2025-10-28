@@ -76,6 +76,7 @@ export interface BenefitsRemainingData {
     weeksRemaining: number | null;
     dollarsRemaining: number | null;
     isLifeBenefit: boolean;
+    sharesLimitWith?: string[]; // Indicates this benefit shares a cap with other types (e.g., 35 and 35ec share 208 weeks)
   }>;
   combinedUsage: {
     weeksUsed: number;

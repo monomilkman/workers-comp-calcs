@@ -1024,8 +1024,24 @@ export async function generateBenefitsRemainingPDF(
       doc.setFontSize(9);
 
       // Calculate what percentage of remaining benefits this represents
+      // Use a Set to track benefit types we've already counted to avoid double-counting shared limits
+      const countedSharedLimits = new Set<string>();
       const totalRemainingValue = data.remainingEntitlements.reduce((sum, ent) => {
         if (!ent.isLifeBenefit && ent.dollarsRemaining) {
+          // If this benefit shares a limit with others, only count it once
+          if (ent.sharesLimitWith && ent.sharesLimitWith.length > 0) {
+            // Create a sorted key for this shared limit group (e.g., "35,35ec")
+            const sharedKey = [ent.type, ...ent.sharesLimitWith].sort().join(',');
+
+            // Only add if we haven't counted this shared group yet
+            if (!countedSharedLimits.has(sharedKey)) {
+              countedSharedLimits.add(sharedKey);
+              return sum + ent.dollarsRemaining;
+            }
+            // Skip if already counted
+            return sum;
+          }
+          // Non-shared benefits are always counted
           return sum + ent.dollarsRemaining;
         }
         return sum;
@@ -1221,8 +1237,24 @@ export function generateBenefitsRemainingExcel(
       wsData.push(['']);
 
       // Settlement analysis
+      // Use a Set to track benefit types we've already counted to avoid double-counting shared limits
+      const countedSharedLimits = new Set<string>();
       const totalRemainingValue = data.remainingEntitlements.reduce((sum, ent) => {
         if (!ent.isLifeBenefit && ent.dollarsRemaining) {
+          // If this benefit shares a limit with others, only count it once
+          if (ent.sharesLimitWith && ent.sharesLimitWith.length > 0) {
+            // Create a sorted key for this shared limit group (e.g., "35,35ec")
+            const sharedKey = [ent.type, ...ent.sharesLimitWith].sort().join(',');
+
+            // Only add if we haven't counted this shared group yet
+            if (!countedSharedLimits.has(sharedKey)) {
+              countedSharedLimits.add(sharedKey);
+              return sum + ent.dollarsRemaining;
+            }
+            // Skip if already counted
+            return sum;
+          }
+          // Non-shared benefits are always counted
           return sum + ent.dollarsRemaining;
         }
         return sum;
@@ -1501,8 +1533,24 @@ export async function generateBenefitsRemainingWord(
       );
 
       // Settlement analysis
+      // Use a Set to track benefit types we've already counted to avoid double-counting shared limits
+      const countedSharedLimits = new Set<string>();
       const totalRemainingValue = data.remainingEntitlements.reduce((sum, ent) => {
         if (!ent.isLifeBenefit && ent.dollarsRemaining) {
+          // If this benefit shares a limit with others, only count it once
+          if (ent.sharesLimitWith && ent.sharesLimitWith.length > 0) {
+            // Create a sorted key for this shared limit group (e.g., "35,35ec")
+            const sharedKey = [ent.type, ...ent.sharesLimitWith].sort().join(',');
+
+            // Only add if we haven't counted this shared group yet
+            if (!countedSharedLimits.has(sharedKey)) {
+              countedSharedLimits.add(sharedKey);
+              return sum + ent.dollarsRemaining;
+            }
+            // Skip if already counted
+            return sum;
+          }
+          // Non-shared benefits are always counted
           return sum + ent.dollarsRemaining;
         }
         return sum;
