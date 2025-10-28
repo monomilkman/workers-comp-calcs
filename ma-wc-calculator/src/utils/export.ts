@@ -198,13 +198,31 @@ export async function generateSettlementStatementPDF(
   clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string }
 ): Promise<string> {
   const doc = new jsPDF();
+  const pageHeight = 280; // Safe page height to avoid overflow
+  const leftMargin = 20;
   let yPosition = 20;
+  let currentPage = 1;
+
+  // Helper function to check if we need a new page
+  const checkPageBreak = (neededSpace: number) => {
+    if (yPosition + neededSpace > pageHeight) {
+      // Add page footer before creating new page
+      doc.setFontSize(8);
+      doc.text(`Page ${currentPage} of 2`, 105, 285, { align: 'center' });
+
+      doc.addPage();
+      currentPage++;
+      yPosition = 20;
+    }
+  };
+
+  const clientName = clientInfo?.clientName || clientInfo?.name || 'CLIENT NAME';
 
   // Add logo if available
   try {
     const logoBase64 = await loadImageAsBase64('/JGIL Logo.jpg');
     const logoDimensions = await getLogoDisplayDimensions('/JGIL Logo.jpg', 50, 30);
-    doc.addImage(logoBase64, 'JPEG', 20, yPosition, logoDimensions.width, logoDimensions.height);
+    doc.addImage(logoBase64, 'JPEG', leftMargin, yPosition, logoDimensions.width, logoDimensions.height);
     yPosition += logoDimensions.height + 10;
   } catch (error) {
     console.warn('Could not load logo for PDF:', error);
@@ -218,32 +236,31 @@ export async function generateSettlementStatementPDF(
 
   // Client name and address section
   doc.setFontSize(11);
-  const clientName = clientInfo?.clientName || clientInfo?.name || 'CLIENT NAME';
-  doc.text(clientName, 20, yPosition);
+  doc.text(clientName, leftMargin, yPosition);
   yPosition += 6;
-  doc.text('ADDRESS', 20, yPosition);
+  doc.text('ADDRESS', leftMargin, yPosition);
   yPosition += 6;
-  doc.text('CITY, STATE ZIP', 20, yPosition);
+  doc.text('CITY, STATE ZIP', leftMargin, yPosition);
   yPosition += 15;
 
   // Re: line
   doc.setFont('helvetica', 'bold');
-  const injuryDate = clientInfo?.dateOfInjury || 'DATE';
-  doc.text(`Re: Your Personal Injury Case of ${injuryDate}`, 20, yPosition);
+  const injuryDate = clientInfo?.dateOfInjury || '2025-01-05';
+  doc.text(`Re: Your Personal Injury Case of ${injuryDate}`, leftMargin, yPosition);
   doc.setFont('helvetica', 'normal');
   yPosition += 15;
 
   // Title
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('"DISTRIBUTION OF SETTLEMENT PROCEEDS"', 20, yPosition);
+  doc.text('"DISTRIBUTION OF SETTLEMENT PROCEEDS"', leftMargin, yPosition);
   doc.setFont('helvetica', 'normal');
   yPosition += 12;
 
   // Total Settlement (bold)
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  doc.text('Total Settlement', 20, yPosition);
+  doc.text('Total Settlement', leftMargin, yPosition);
   doc.text(formatCurrency(settlementData.proposedAmount), 150, yPosition, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   yPosition += 10;
@@ -251,7 +268,7 @@ export async function generateSettlementStatementPDF(
   // Expenses section
   doc.setFontSize(11);
   doc.setFont('helvetica', 'bold');
-  doc.text('Expenses', 20, yPosition);
+  doc.text('Expenses', leftMargin, yPosition);
   doc.setFont('helvetica', 'normal');
   yPosition += 6;
 
@@ -263,6 +280,7 @@ export async function generateSettlementStatementPDF(
 
     settlementData.expenses.forEach(expense => {
       if (expense.amount > 0) {
+        checkPageBreak(6);
         const desc = expense.description.trim() || 'Expense';
         doc.text(`    ${desc}`, 30, yPosition);
         doc.text(formatCurrency(expense.amount), 150, yPosition, { align: 'right' });
@@ -271,6 +289,7 @@ export async function generateSettlementStatementPDF(
     });
 
     if (settlementData.expenses.length > 0) {
+      checkPageBreak(6);
       doc.setFont('helvetica', 'bold');
       doc.text('    Total Expenses:', 30, yPosition);
       doc.text(formatCurrency(totalExpenses), 150, yPosition, { align: 'right' });
@@ -281,6 +300,7 @@ export async function generateSettlementStatementPDF(
     // Single expense amount (WC format)
     totalExpenses = settlementData.expenses;
     if (totalExpenses > 0) {
+      checkPageBreak(6);
       doc.text(`    Attorney Expenses`, 30, yPosition);
       doc.text(formatCurrency(totalExpenses), 150, yPosition, { align: 'right' });
       yPosition += 8;
@@ -289,14 +309,16 @@ export async function generateSettlementStatementPDF(
 
   // Liens section (MVA/GL format)
   if (settlementData.liens && settlementData.liens.length > 0) {
+    checkPageBreak(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('Liens', 20, yPosition);
+    doc.text('Liens', leftMargin, yPosition);
     doc.setFont('helvetica', 'normal');
     yPosition += 6;
 
     // List each lien with reduction info
     settlementData.liens.forEach(lien => {
       if (lien.reducedAmount > 0) {
+        checkPageBreak(6);
         const desc = lien.description.trim() || 'Lien';
         let lienText = `    ${desc}`;
         if (lien.originalAmount > lien.reducedAmount) {
@@ -311,6 +333,7 @@ export async function generateSettlementStatementPDF(
     // Total Liens
     const totalLiens = settlementData.liens.reduce((sum, lien) => sum + lien.reducedAmount, 0);
     if (totalLiens > 0) {
+      checkPageBreak(6);
       doc.setFont('helvetica', 'bold');
       doc.text('    Total Liens:', 30, yPosition);
       doc.text(formatCurrency(totalLiens), 150, yPosition, { align: 'right' });
@@ -321,13 +344,15 @@ export async function generateSettlementStatementPDF(
 
   // Deductions section (WC format)
   if (settlementData.deductions && settlementData.deductions.length > 0) {
+    checkPageBreak(10);
     doc.setFont('helvetica', 'bold');
-    doc.text('Additional Deductions', 20, yPosition);
+    doc.text('Additional Deductions', leftMargin, yPosition);
     doc.setFont('helvetica', 'normal');
     yPosition += 6;
 
     settlementData.deductions.forEach(deduction => {
       if (deduction.amount > 0) {
+        checkPageBreak(6);
         const desc = deduction.description.trim() || 'Deduction';
         doc.text(`    ${desc}`, 30, yPosition);
         doc.text(formatCurrency(deduction.amount), 150, yPosition, { align: 'right' });
@@ -337,6 +362,7 @@ export async function generateSettlementStatementPDF(
 
     const totalDeductions = settlementData.deductions.reduce((sum, d) => sum + d.amount, 0);
     if (totalDeductions > 0) {
+      checkPageBreak(6);
       doc.setFont('helvetica', 'bold');
       doc.text('    Total Deductions:', 30, yPosition);
       doc.text(formatCurrency(totalDeductions), 150, yPosition, { align: 'right' });
@@ -346,85 +372,81 @@ export async function generateSettlementStatementPDF(
   }
 
   // Legal Fee
+  checkPageBreak(8);
   doc.setFont('helvetica', 'bold');
   const feePercent = ((settlementData.actualFee / settlementData.proposedAmount) * 100).toFixed(6);
-  doc.text(`Legal Fee ${feePercent}%`, 20, yPosition);
+  doc.text(`Legal Fee ${feePercent}%`, leftMargin, yPosition);
   doc.text(formatCurrency(settlementData.actualFee), 150, yPosition, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   yPosition += 12;
 
   // TOTAL DUE CLIENT (boxed)
+  checkPageBreak(15);
   doc.setDrawColor(0);
   doc.setLineWidth(1);
   doc.rect(15, yPosition - 8, 180, 12);
   doc.setFontSize(14);
   doc.setFont('helvetica', 'bold');
-  doc.text('TOTAL DUE CLIENT:', 20, yPosition);
+  doc.text('TOTAL DUE CLIENT:', leftMargin, yPosition);
   doc.text(formatCurrency(settlementData.netToEmployee), 150, yPosition, { align: 'right' });
   doc.setFont('helvetica', 'normal');
   yPosition += 20;
 
-  // Legal disclaimers section
-  doc.setFontSize(10);
-  yPosition += 5;
-  const disclaimer1 = 'I also been informed that any settlement proceeds are subjected to Department of Revenue';
-  doc.text(disclaimer1, 20, yPosition);
-  yPosition += 5;
-  const disclaimer2 = 'attachment for any outstanding child support (pursuant to M.G.L. c. 175 § 186 (24D)), Medicare';
-  doc.text(disclaimer2, 20, yPosition);
-  yPosition += 5;
-  const disclaimer3 = 'benefits or taxes owed.  These settlement proceeds are also subject to attachment for any benefits';
-  doc.text(disclaimer3, 20, yPosition);
-  yPosition += 5;
-  const disclaimer4 = 'received through Mass Health / The Department of Transitional Assistance and I further understand that';
-  doc.text(disclaimer4, 20, yPosition);
-  yPosition += 5;
-  const disclaimer5 = 'these liens will be paid on my behalf by the Law Offices of Jeffrey S. Glassman in accordance with';
-  doc.text(disclaimer5, 20, yPosition);
-  yPosition += 5;
-  const disclaimer6 = 'Massachusetts General Law.';
-  doc.text(disclaimer6, 20, yPosition);
-  yPosition += 10;
+  // Add Page 1 footer
+  doc.setFontSize(8);
+  doc.text('Page 1 of 2', 105, 285, { align: 'center' });
 
-  const certify = 'I certify that I have read the foregoing and agree with its contents.';
-  doc.text(certify, 20, yPosition);
-  yPosition += 15;
+  // ========== PAGE 2 START ==========
+  doc.addPage();
+  currentPage = 2;
+  yPosition = 20;
+
+  // Complete authorization language with client name substitution
+  doc.setFontSize(10);
+  const authorizationText = `I, ${clientName}, hereby authorize Jeffrey S. Glassman to distribute my settlement proceeds as noted above.  This includes the authorization to sign my name to any and all documents including checks and releases, which require my endorsement.  I am also aware that I am responsible for any outstanding medical bills and liens and that my settlement may included all or a portion of my outstanding medical bills whereby the medical provider or lien holder could potentially pursue a claim against me for any outstanding amount owed.  In addition I understand that if I have health insurance, the health insurance company may have at right to recover from me the amount they have paid.  Notwithstanding the above, I hereby direct the Law Offices of Jeffrey S. Glassman, LLC to issue all net settlement proceeds to me.  I understand that once I sign the release and the funds are disbursed, that this concludes my case and that the firm will be closing the case and the contents will be destroyed within 7 years.
+
+I also have been informed that any settlement proceeds are subjected to Department of Revenue attachment for any outstanding child support (pursuant to M.G.L. c. 175 § 186 (24D)), Medicare benefits or taxes owed.  These settlement proceeds are also subject to attachment for any benefits received through Mass Health / The Department of Transitional Assistance and I further understand that these liens will be paid on my behalf by the Law Offices of Jeffrey S. Glassman in accordance with Massachusetts General Law.`;
+
+  // Split text to fit within margins (170mm width)
+  const splitText = doc.splitTextToSize(authorizationText, 170);
+  doc.text(splitText, leftMargin, yPosition);
+  yPosition += (splitText.length * 5) + 10;
 
   // Signature line
-  doc.text('Signed this _____ day of ____________________, 20____', 20, yPosition);
+  doc.text('Signed this _____ day of ____________________, 20____', leftMargin, yPosition);
   yPosition += 15;
 
-  doc.line(20, yPosition, 150, yPosition);
+  doc.line(leftMargin, yPosition, 150, yPosition);
   yPosition += 5;
-  doc.text('CLIENT NAME', 20, yPosition);
+  doc.text('CLIENT NAME', leftMargin, yPosition);
   yPosition += 15;
 
   // Checkboxes
   doc.setFont('helvetica', 'bold');
-  doc.text('PLEASE CHECK ONE:', 20, yPosition);
+  doc.text('PLEASE CHECK ONE:', leftMargin, yPosition);
   doc.setFont('helvetica', 'normal');
   yPosition += 7;
 
-  doc.rect(20, yPosition - 3, 3, 3); // checkbox
+  doc.rect(leftMargin, yPosition - 3, 3, 3); // checkbox
   doc.text('I HAVE RECEIVED MEDICARE BENEFITS.', 28, yPosition);
   yPosition += 6;
 
-  doc.rect(20, yPosition - 3, 3, 3); // checkbox
+  doc.rect(leftMargin, yPosition - 3, 3, 3); // checkbox
   doc.text('I HAVE NOT RECEIVED MEDICARE BENEFITS.', 28, yPosition);
   yPosition += 10;
 
   doc.setFont('helvetica', 'bold');
-  doc.text('PLEASE CHECK ONE:', 20, yPosition);
+  doc.text('PLEASE CHECK ONE:', leftMargin, yPosition);
   doc.setFont('helvetica', 'normal');
   yPosition += 7;
 
-  doc.rect(20, yPosition - 3, 3, 3); // checkbox
+  doc.rect(leftMargin, yPosition - 3, 3, 3); // checkbox
   doc.text('I WOULD LIKE TO PICK UP MY SETTLEMENT CHECK FROM ATTORNEY', 28, yPosition);
   yPosition += 6;
   doc.text('GLASSMAN', 28, yPosition);
   yPosition += 6;
 
-  doc.rect(20, yPosition - 3, 3, 3); // checkbox
+  doc.rect(leftMargin, yPosition - 3, 3, 3); // checkbox
   doc.text('I WOULD LIKE MY CHECK MAILED TO ME AT THE FOLLOWING ADDRESS:', 28, yPosition);
   yPosition += 8;
 
@@ -435,7 +457,7 @@ export async function generateSettlementStatementPDF(
   yPosition += 8;
   doc.line(35, yPosition, 160, yPosition);
 
-  // Footer
+  // Page 2 footer
   doc.setFontSize(8);
   doc.text('Page 2 of 2', 105, 285, { align: 'center' });
 
