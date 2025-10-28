@@ -4,7 +4,7 @@ import { useCalculations } from './hooks/useCalculations';
 import { formatCurrency } from './utils/money';
 import { Clock, FileText } from 'lucide-react';
 import { Toaster } from 'sonner';
-import type { AppState } from './types';
+import type { AppState, ProrationMode } from './types';
 
 // Layout Components
 import { ThemeProvider, useTheme } from './contexts/ThemeContext';

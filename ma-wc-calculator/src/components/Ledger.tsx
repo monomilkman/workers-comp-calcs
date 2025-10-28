@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { formatCurrency } from '../utils/money';
 import { findOverlappingEntries } from '../utils/validation';
-import type { LedgerEntry, BenefitType } from '../types';
+import type { LedgerEntry, BenefitType, StateRateRow } from '../types';
 import { LedgerEditor } from './LedgerEditor';
 
 interface LedgerProps {
@@ -9,7 +9,7 @@ interface LedgerProps {
   aww: number;
   earningCapacity: number;
   dateOfInjury: string;
-  stateRateTable: any[];
+  stateRateTable: StateRateRow[];
   prorationMode: 'days' | 'calendar';
   onAddEntry: (entry: LedgerEntry) => void;
   onUpdateEntry: (entry: LedgerEntry) => void;

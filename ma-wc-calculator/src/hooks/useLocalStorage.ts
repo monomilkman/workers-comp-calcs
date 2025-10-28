@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { AppState } from '../types';
 
 /**
  * Custom hook for localStorage with JSON serialization
@@ -38,7 +39,7 @@ export function useLocalStorage<T>(
  * Custom hook to save/load complete sessions
  */
 export function useSessionStorage() {
-  const saveSession = (sessionData: any, sessionName: string) => {
+  const saveSession = (sessionData: AppState, sessionName: string) => {
     try {
       const sessions = getStoredSessions();
       const sessionKey = `session_${Date.now()}_${sessionName.replace(/\s+/g, '_')}`;
@@ -94,7 +95,7 @@ export function useSessionStorage() {
   };
 }
 
-function getStoredSessions(): Record<string, any> {
+function getStoredSessions(): Record<string, AppState & { metadata?: { name: string; savedAt: string } }> {
   try {
     const stored = localStorage.getItem('ma_wc_sessions');
     return stored ? JSON.parse(stored) : {};

@@ -317,12 +317,10 @@ export function ExportButtons({
                                 Saved: {new Date(session.metadata.savedAt).toLocaleString()}
                               </p>
                             )}
-                            {session.data && (
-                              <p className="text-xs text-gray-600 mt-1">
-                                AWW: ${session.data.aww} | DOI: {session.data.date_of_injury} | 
-                                {session.data.ledger?.length || 0} entries
-                              </p>
-                            )}
+                            <p className="text-xs text-gray-600 mt-1">
+                              AWW: ${session.aww} | DOI: {session.date_of_injury} |
+                              {session.ledger?.length || 0} entries
+                            </p>
                           </div>
                           <div className="flex space-x-2 ml-4">
                             <button
