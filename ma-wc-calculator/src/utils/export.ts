@@ -412,6 +412,10 @@ I also have been informed that any settlement proceeds are subjected to Departme
   doc.text(splitText, leftMargin, yPosition);
   yPosition += (splitText.length * 5) + 10;
 
+  // Certification statement
+  doc.text('I certify that I have read the foregoing and agree with its contents.', leftMargin, yPosition);
+  yPosition += 15;
+
   // Signature line
   doc.text('Signed this _____ day of ____________________, 20____', leftMargin, yPosition);
   yPosition += 15;
