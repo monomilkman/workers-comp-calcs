@@ -1,17 +1,16 @@
 import { useState, useMemo } from 'react';
 import { toast } from 'sonner';
 import { formatCurrency, parseCurrency } from '../utils/money';
-import { calculateSettlement, validateSettlementData, createEmptyLien } from '../utils/settlementCalculations';
+import { calculateSettlement, validateSettlementData, createEmptyLien, createEmptyExpense } from '../utils/settlementCalculations';
 import { generateSettlementStatementPDF, generateSettlementStatementExcel, generateSettlementStatementWord, downloadBlob } from '../utils/export';
 import { Plus, Trash2, Download, FileText, File, Shield, AlertCircle } from 'lucide-react';
-import type { GLSettlementData, Lien, ClientInfo } from '../types/settlement';
+import type { GLSettlementData, Lien, Expense, ClientInfo } from '../types/settlement';
 
 export function GLSettlementCalculator() {
   const [grossSettlement, setGrossSettlement] = useState<number>(0);
   const [grossSettlementInput, setGrossSettlementInput] = useState<string>('');
-  const [attorneyFeePercent, setAttorneyFeePercent] = useState<number>(33.33);
-  const [caseExpenses, setCaseExpenses] = useState<number>(0);
-  const [caseExpensesInput, setCaseExpensesInput] = useState<string>('');
+  const [attorneyFeePercent, setAttorneyFeePercent] = useState<number>(33.333333);
+  const [expenses, setExpenses] = useState<Expense[]>([]);
   const [liens, setLiens] = useState<Lien[]>([]);
   const [clientInfo, setClientInfo] = useState<ClientInfo>({
     attorneyName: '',
@@ -23,8 +22,9 @@ export function GLSettlementCalculator() {
   const settlementData: GLSettlementData = {
     grossSettlement,
     attorneyFeePercent,
-    caseExpenses,
-    liens: liens.filter(l => l.originalAmount > 0 || l.reducedAmount > 0)
+    expenses: expenses.filter(e => e.amount > 0 || e.description.trim()),
+    liens: liens.filter(l => l.originalAmount > 0 || l.reducedAmount > 0),
+    caseType: 'gl'
   };
 
   const calculation = useMemo(() => 
@@ -43,14 +43,22 @@ export function GLSettlementCalculator() {
     setGrossSettlement(numericValue);
   };
 
-  const handleCaseExpensesChange = (value: string) => {
-    setCaseExpensesInput(value);
-    const numericValue = parseCurrency(value);
-    setCaseExpenses(numericValue);
-  };
-
   const updateClientInfo = (field: keyof ClientInfo, value: string) => {
     setClientInfo(prev => ({ ...prev, [field]: value }));
+  };
+
+  const addExpense = () => {
+    setExpenses(prev => [...prev, createEmptyExpense()]);
+  };
+
+  const updateExpense = (id: string, field: keyof Expense, value: string | number) => {
+    setExpenses(prev => prev.map(expense =>
+      expense.id === id ? { ...expense, [field]: value } : expense
+    ));
+  };
+
+  const removeExpense = (id: string) => {
+    setExpenses(prev => prev.filter(expense => expense.id !== id));
   };
 
   const addLien = () => {
@@ -58,7 +66,7 @@ export function GLSettlementCalculator() {
   };
 
   const updateLien = (id: string, field: keyof Lien, value: string | number) => {
-    setLiens(prev => prev.map(lien => 
+    setLiens(prev => prev.map(lien =>
       lien.id === id ? { ...lien, [field]: value } : lien
     ));
   };
@@ -73,13 +81,15 @@ export function GLSettlementCalculator() {
     standardFee: calculation.attorneyFee,
     actualFee: calculation.attorneyFee,
     feeReduction: 0,
-    expenses: calculation.caseExpenses,
-    deductions: liens.filter(l => l.reducedAmount > 0).map(l => ({
+    expenses: calculation.expenses,
+    liens: liens.filter(l => l.reducedAmount > 0).map(l => ({
       description: l.description,
-      amount: l.reducedAmount
+      originalAmount: l.originalAmount,
+      reducedAmount: l.reducedAmount
     })),
     totalDeductions: calculation.totalLiensReduced,
-    netToEmployee: calculation.netToClient
+    netToEmployee: calculation.netToClient,
+    caseType: 'gl' as const
   });
 
   const handleDownloadPDF = async () => {
@@ -202,7 +212,7 @@ export function GLSettlementCalculator() {
         <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
           Settlement Details
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div>
             <label htmlFor="gl-gross-settlement" className="input-label">
               Gross Settlement Amount
@@ -229,29 +239,79 @@ export function GLSettlementCalculator() {
               value={attorneyFeePercent}
               onChange={(e) => setAttorneyFeePercent(parseFloat(e.target.value) || 0)}
               className="w-full"
-              placeholder="33.33"
-              step="0.01"
+              placeholder="33.333333"
+              step="0.000001"
               min="0"
               max="100"
             />
           </div>
-          <div>
-            <label htmlFor="gl-case-expenses" className="input-label">
-              Case Expenses
-            </label>
-            <div className="relative">
-              <span className="absolute left-3 top-2 text-gray-500 dark:text-gray-400">$</span>
-              <input
-                type="text"
-                id="gl-case-expenses"
-                value={caseExpensesInput}
-                onChange={(e) => handleCaseExpensesChange(e.target.value)}
-                className="pl-8 w-full"
-                placeholder="0.00"
-              />
-            </div>
-          </div>
         </div>
+      </div>
+
+      {/* Case Expenses Management */}
+      <div className="card">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+            Case Expenses
+          </h3>
+          <button
+            type="button"
+            onClick={addExpense}
+            className="btn-secondary btn-sm flex items-center space-x-1"
+          >
+            <Plus className="h-4 w-4" />
+            <span>Add Expense</span>
+          </button>
+        </div>
+
+        {expenses.length === 0 ? (
+          <div className="text-center py-6">
+            <p className="text-gray-500 dark:text-gray-400">
+              No expenses added. Click "Add Expense" to include filing fees, service of process, medical records, etc.
+            </p>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {expenses.map((expense) => (
+              <div key={expense.id} className="grid grid-cols-1 md:grid-cols-3 gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+                <div className="md:col-span-2">
+                  <label className="input-label text-xs">Description</label>
+                  <input
+                    type="text"
+                    value={expense.description}
+                    onChange={(e) => updateExpense(expense.id, 'description', e.target.value)}
+                    placeholder="e.g., Filing Fee, Service of Process, Medical Records"
+                    className="w-full"
+                  />
+                </div>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <label className="input-label text-xs">Amount</label>
+                    <div className="relative">
+                      <span className="absolute left-2 top-2 text-gray-500 dark:text-gray-400 text-sm">$</span>
+                      <input
+                        type="text"
+                        value={expense.amount > 0 ? expense.amount.toString() : ''}
+                        onChange={(e) => updateExpense(expense.id, 'amount', parseCurrency(e.target.value))}
+                        placeholder="0.00"
+                        className="pl-6 w-full"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex items-end">
+                    <button
+                      type="button"
+                      onClick={() => removeExpense(expense.id)}
+                      className="p-2 text-red-500 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* Liens Management */}
@@ -378,10 +438,10 @@ export function GLSettlementCalculator() {
                 </tr>
                 <tr>
                   <td className="px-4 py-3 text-sm font-medium text-gray-900 dark:text-gray-100">
-                    Case Expenses
+                    Total Case Expenses
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900 dark:text-gray-100 text-right">
-                    ({formatCurrency(calculation.caseExpenses)})
+                    ({formatCurrency(calculation.totalExpenses)})
                   </td>
                 </tr>
                 {calculation.totalLiensReduced > 0 && (
@@ -422,39 +482,43 @@ export function GLSettlementCalculator() {
           )}
 
           {/* Export Options */}
-          <div className="mt-6 border-t border-gray-200 dark:border-gray-600 pt-4">
-            <div className="flex items-start justify-between">
-              <div>
-                <h4 className="font-semibold text-gray-900 dark:text-gray-100">Settlement Distribution Statement</h4>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  Generate professional settlement distribution documents
-                </p>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                <button
-                  onClick={handleDownloadPDF}
-                  className="btn-primary flex items-center space-x-2"
-                  disabled={!validation.isValid}
-                >
-                  <Download className="h-4 w-4" />
-                  <span>PDF</span>
-                </button>
-                <button
-                  onClick={handleDownloadExcel}
-                  className="btn-secondary flex items-center space-x-2"
-                  disabled={!validation.isValid}
-                >
-                  <FileText className="h-4 w-4" />
-                  <span>Excel</span>
-                </button>
-                <button
-                  onClick={handleDownloadWord}
-                  className="btn-secondary flex items-center space-x-2"
-                  disabled={!validation.isValid}
-                >
-                  <File className="h-4 w-4" />
-                  <span>Word</span>
-                </button>
+          <div className="mt-6 pt-6 border-t border-gray-200 dark:border-gray-600">
+            <div className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 rounded-lg p-6 border border-blue-100 dark:border-blue-800">
+              <div className="flex flex-col space-y-4">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-2">
+                    Settlement Distribution Sheet Generator
+                  </h4>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    Generate professional settlement distribution documents in multiple formats
+                  </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                  <button
+                    onClick={handleDownloadPDF}
+                    className="inline-flex items-center justify-center px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!validation.isValid}
+                  >
+                    <Download className="h-5 w-5 mr-2" />
+                    <span>PDF</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadExcel}
+                    className="inline-flex items-center justify-center px-6 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!validation.isValid}
+                  >
+                    <FileText className="h-5 w-5 mr-2" />
+                    <span>Excel</span>
+                  </button>
+                  <button
+                    onClick={handleDownloadWord}
+                    className="inline-flex items-center justify-center px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-lg shadow-sm transition-colors duration-150 disabled:opacity-50 disabled:cursor-not-allowed"
+                    disabled={!validation.isValid}
+                  >
+                    <File className="h-5 w-5 mr-2" />
+                    <span>Word</span>
+                  </button>
+                </div>
               </div>
             </div>
           </div>

@@ -1,4 +1,4 @@
-import type { MVASettlementData, GLSettlementData, SettlementCalculationResult, Lien } from '../types/settlement';
+import type { MVASettlementData, GLSettlementData, SettlementCalculationResult, Lien, Expense } from '../types/settlement';
 
 /**
  * Calculate settlement distribution for MVA or GL cases
@@ -6,10 +6,13 @@ import type { MVASettlementData, GLSettlementData, SettlementCalculationResult, 
 export function calculateSettlement(
   data: MVASettlementData | GLSettlementData
 ): SettlementCalculationResult {
-  const { grossSettlement, attorneyFeePercent, caseExpenses, liens } = data;
+  const { grossSettlement, attorneyFeePercent, expenses, liens } = data;
 
   // Calculate attorney fee
   const attorneyFee = grossSettlement * (attorneyFeePercent / 100);
+
+  // Calculate total expenses from itemized list
+  const totalExpenses = expenses.reduce((sum, expense) => sum + expense.amount, 0);
 
   // Calculate lien totals
   const totalLiensOriginal = liens.reduce((sum, lien) => sum + lien.originalAmount, 0);
@@ -17,14 +20,15 @@ export function calculateSettlement(
   const lienReductionSavings = totalLiensOriginal - totalLiensReduced;
 
   // Calculate total deductions and net to client
-  const totalDeductions = attorneyFee + caseExpenses + totalLiensReduced;
+  const totalDeductions = attorneyFee + totalExpenses + totalLiensReduced;
   const netToClient = grossSettlement - totalDeductions;
 
   return {
     grossSettlement,
     attorneyFee,
     attorneyFeePercent,
-    caseExpenses,
+    totalExpenses,
+    expenses,
     totalLiensOriginal,
     totalLiensReduced,
     lienReductionSavings,
@@ -49,9 +53,15 @@ export function validateSettlementData(
     errors.push('Attorney fee percentage must be between 0 and 100');
   }
 
-  if (data.caseExpenses < 0) {
-    errors.push('Case expenses cannot be negative');
-  }
+  // Validate expenses
+  data.expenses.forEach((expense, index) => {
+    if (!expense.description.trim()) {
+      errors.push(`Expense ${index + 1}: Description is required`);
+    }
+    if (expense.amount < 0) {
+      errors.push(`Expense ${index + 1}: Amount cannot be negative`);
+    }
+  });
 
   // Validate liens
   data.liens.forEach((lien, index) => {
@@ -84,6 +94,17 @@ export function createEmptyLien(): Lien {
     description: '',
     originalAmount: 0,
     reducedAmount: 0
+  };
+}
+
+/**
+ * Create a new empty expense
+ */
+export function createEmptyExpense(): Expense {
+  return {
+    id: Date.now().toString() + Math.random().toString(36).substr(2, 9),
+    description: '',
+    amount: 0
   };
 }
 

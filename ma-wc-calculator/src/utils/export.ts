@@ -12,10 +12,12 @@ interface SettlementStatementData {
   standardFee: number;
   actualFee: number;
   feeReduction: number;
-  expenses: number;
-  deductions: Array<{ description: string; amount: number }>;
+  expenses: Array<{ description: string; amount: number }> | number; // Can be itemized (MVA/GL) or single number (WC)
+  liens?: Array<{ description: string; originalAmount: number; reducedAmount: number }>; // Optional for MVA/GL
+  deductions?: Array<{ description: string; amount: number }>; // Optional for WC
   totalDeductions: number;
   netToEmployee: number;
+  caseType?: 'mva' | 'gl' | 'wc'; // Optional, for display purposes
 }
 
 /**
@@ -189,137 +191,254 @@ export function downloadBlob(blob: Blob, filename: string): void {
 }
 
 /**
- * Generate settlement statement PDF
+ * Generate settlement statement PDF matching professional template
  */
 export async function generateSettlementStatementPDF(
   settlementData: SettlementStatementData,
-  clientInfo?: { name?: string; attorney?: string; dateOfInjury?: string; date?: string }
+  clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string }
 ): Promise<string> {
   const doc = new jsPDF();
   let yPosition = 20;
-  
+
   // Add logo if available
   try {
     const logoBase64 = await loadImageAsBase64('/JGIL Logo.jpg');
     const logoDimensions = await getLogoDisplayDimensions('/JGIL Logo.jpg', 50, 30);
-    doc.addImage(logoBase64, 'JPEG', 20, yPosition - 5, logoDimensions.width, logoDimensions.height);
+    doc.addImage(logoBase64, 'JPEG', 20, yPosition, logoDimensions.width, logoDimensions.height);
+    yPosition += logoDimensions.height + 10;
   } catch (error) {
     console.warn('Could not load logo for PDF:', error);
+    yPosition += 10;
   }
-  
-  // Header
-  doc.setFontSize(18);
-  doc.text('Settlement Distribution Statement', 20, yPosition);
-  yPosition += 15;
-  
-  // Client and attorney info (positioned to the right to make room for logo)
-  doc.setFontSize(12);
-  const infoStartX = 110; // Position info to the right of where logo will be
-  
-  if (clientInfo?.attorney) {
-    doc.text(`Attorney: ${clientInfo.attorney}`, infoStartX, yPosition);
-    yPosition += 7;
-  }
-  if (clientInfo?.name) {
-    doc.text(`Client: ${clientInfo.name}`, infoStartX, yPosition);
-    yPosition += 7;
-  }
-  if (clientInfo?.dateOfInjury) {
-    doc.text(`Date of Injury: ${clientInfo.dateOfInjury}`, infoStartX, yPosition);
-    yPosition += 7;
-  }
-  
-  const displayDate = clientInfo?.date ? new Date(clientInfo.date).toLocaleDateString() : new Date().toLocaleDateString();
-  doc.text(`Date: ${displayDate}`, infoStartX, yPosition);
-  yPosition += 15;
-  
-  // Settlement amount
-  doc.setFontSize(14);
-  doc.text('SETTLEMENT BREAKDOWN', 20, yPosition);
-  yPosition += 10;
-  
-  doc.setFontSize(12);
-  doc.text(`Gross Settlement Amount:`, 20, yPosition);
-  doc.text(`${formatCurrency(settlementData.proposedAmount)}`, 150, yPosition);
-  yPosition += 10;
-  
-  // Attorney fees section
-  doc.text('ATTORNEY FEES & EXPENSES', 20, yPosition);
-  yPosition += 8;
-  
+
+  // Date (top right)
   doc.setFontSize(11);
-  const liabilityText = settlementData.liabilityType === 'accepted' ? 'Accepted Liability (20%)' : 'Unaccepted Liability (15%)';
-  doc.text(`Standard Fee - ${liabilityText}:`, 25, yPosition);
-  doc.text(`${formatCurrency(settlementData.standardFee)}`, 150, yPosition);
+  doc.text(`October 28, 2025`, 150, 30);
+  yPosition = 50;
+
+  // Client name and address section
+  doc.setFontSize(11);
+  const clientName = clientInfo?.clientName || clientInfo?.name || 'CLIENT NAME';
+  doc.text(clientName, 20, yPosition);
   yPosition += 6;
-  
-  if (settlementData.feeReduction > 0) {
-    doc.text(`Less: Attorney Fee Reduction:`, 25, yPosition);
-    doc.text(`(${formatCurrency(settlementData.feeReduction)})`, 150, yPosition);
-    yPosition += 6;
-  }
-  
-  doc.text(`Actual Attorney Fee:`, 25, yPosition);
-  doc.text(`${formatCurrency(settlementData.actualFee)}`, 150, yPosition);
+  doc.text('ADDRESS', 20, yPosition);
   yPosition += 6;
-  
-  if (settlementData.expenses > 0) {
-    doc.text(`Attorney Expenses:`, 25, yPosition);
-    doc.text(`${formatCurrency(settlementData.expenses)}`, 150, yPosition);
-    yPosition += 6;
-  }
-  
-  const totalAttorneyDeductions = settlementData.actualFee + settlementData.expenses;
-  doc.text(`Total Attorney Deductions:`, 25, yPosition);
-  doc.text(`${formatCurrency(totalAttorneyDeductions)}`, 150, yPosition);
+  doc.text('CITY, STATE ZIP', 20, yPosition);
+  yPosition += 15;
+
+  // Re: line
+  doc.setFont('helvetica', 'bold');
+  const injuryDate = clientInfo?.dateOfInjury || 'DATE';
+  doc.text(`Re: Your Personal Injury Case of ${injuryDate}`, 20, yPosition);
+  doc.setFont('helvetica', 'normal');
+  yPosition += 15;
+
+  // Title
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('"DISTRIBUTION OF SETTLEMENT PROCEEDS"', 20, yPosition);
+  doc.setFont('helvetica', 'normal');
+  yPosition += 12;
+
+  // Total Settlement (bold)
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Total Settlement', 20, yPosition);
+  doc.text(formatCurrency(settlementData.proposedAmount), 150, yPosition, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
   yPosition += 10;
-  
-  // Other deductions
-  if (settlementData.deductions.length > 0) {
-    doc.setFontSize(12);
-    doc.text('OTHER DEDUCTIONS', 20, yPosition);
-    yPosition += 8;
-    
-    doc.setFontSize(11);
-    settlementData.deductions.forEach(deduction => {
-      if (deduction.amount > 0) {
-        doc.text(`${deduction.description}:`, 25, yPosition);
-        doc.text(`${formatCurrency(deduction.amount)}`, 150, yPosition);
-        yPosition += 6;
+
+  // Expenses section
+  doc.setFontSize(11);
+  doc.setFont('helvetica', 'bold');
+  doc.text('Expenses', 20, yPosition);
+  doc.setFont('helvetica', 'normal');
+  yPosition += 6;
+
+  // Handle both itemized expenses (array) and single expense (number)
+  let totalExpenses = 0;
+  if (Array.isArray(settlementData.expenses)) {
+    // Itemized expenses (MVA/GL format)
+    totalExpenses = settlementData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+
+    settlementData.expenses.forEach(expense => {
+      if (expense.amount > 0) {
+        const desc = expense.description.trim() || 'Expense';
+        doc.text(`    ${desc}`, 30, yPosition);
+        doc.text(formatCurrency(expense.amount), 150, yPosition, { align: 'right' });
+        yPosition += 5;
       }
     });
-    
-    if (settlementData.totalDeductions > 0) {
-      doc.text(`Total Other Deductions:`, 25, yPosition);
-      doc.text(`${formatCurrency(settlementData.totalDeductions)}`, 150, yPosition);
-      yPosition += 10;
+
+    if (settlementData.expenses.length > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('    Total Expenses:', 30, yPosition);
+      doc.text(formatCurrency(totalExpenses), 150, yPosition, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      yPosition += 8;
+    }
+  } else {
+    // Single expense amount (WC format)
+    totalExpenses = settlementData.expenses;
+    if (totalExpenses > 0) {
+      doc.text(`    Attorney Expenses`, 30, yPosition);
+      doc.text(formatCurrency(totalExpenses), 150, yPosition, { align: 'right' });
+      yPosition += 8;
     }
   }
-  
-  // Net calculation
-  doc.setFontSize(14);
+
+  // Liens section (MVA/GL format)
+  if (settlementData.liens && settlementData.liens.length > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Liens', 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 6;
+
+    // List each lien with reduction info
+    settlementData.liens.forEach(lien => {
+      if (lien.reducedAmount > 0) {
+        const desc = lien.description.trim() || 'Lien';
+        let lienText = `    ${desc}`;
+        if (lien.originalAmount > lien.reducedAmount) {
+          lienText += ` (reduced from ${formatCurrency(lien.originalAmount)})`;
+        }
+        doc.text(lienText, 30, yPosition);
+        doc.text(formatCurrency(lien.reducedAmount), 150, yPosition, { align: 'right' });
+        yPosition += 5;
+      }
+    });
+
+    // Total Liens
+    const totalLiens = settlementData.liens.reduce((sum, lien) => sum + lien.reducedAmount, 0);
+    if (totalLiens > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('    Total Liens:', 30, yPosition);
+      doc.text(formatCurrency(totalLiens), 150, yPosition, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      yPosition += 8;
+    }
+  }
+
+  // Deductions section (WC format)
+  if (settlementData.deductions && settlementData.deductions.length > 0) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Additional Deductions', 20, yPosition);
+    doc.setFont('helvetica', 'normal');
+    yPosition += 6;
+
+    settlementData.deductions.forEach(deduction => {
+      if (deduction.amount > 0) {
+        const desc = deduction.description.trim() || 'Deduction';
+        doc.text(`    ${desc}`, 30, yPosition);
+        doc.text(formatCurrency(deduction.amount), 150, yPosition, { align: 'right' });
+        yPosition += 5;
+      }
+    });
+
+    const totalDeductions = settlementData.deductions.reduce((sum, d) => sum + d.amount, 0);
+    if (totalDeductions > 0) {
+      doc.setFont('helvetica', 'bold');
+      doc.text('    Total Deductions:', 30, yPosition);
+      doc.text(formatCurrency(totalDeductions), 150, yPosition, { align: 'right' });
+      doc.setFont('helvetica', 'normal');
+      yPosition += 8;
+    }
+  }
+
+  // Legal Fee
+  doc.setFont('helvetica', 'bold');
+  const feePercent = ((settlementData.actualFee / settlementData.proposedAmount) * 100).toFixed(6);
+  doc.text(`Legal Fee ${feePercent}%`, 20, yPosition);
+  doc.text(formatCurrency(settlementData.actualFee), 150, yPosition, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  yPosition += 12;
+
+  // TOTAL DUE CLIENT (boxed)
   doc.setDrawColor(0);
-  doc.line(20, yPosition, 190, yPosition); // Horizontal line
-  yPosition += 8;
-  
-  doc.text('NET AMOUNT TO CLIENT:', 20, yPosition);
-  doc.text(`${formatCurrency(settlementData.netToEmployee)}`, 140, yPosition);
-  yPosition += 5;
-  
-  doc.line(20, yPosition, 190, yPosition); // Bottom line
-  yPosition += 15;
-  
-  // Footer notes
+  doc.setLineWidth(1);
+  doc.rect(15, yPosition - 8, 180, 12);
+  doc.setFontSize(14);
+  doc.setFont('helvetica', 'bold');
+  doc.text('TOTAL DUE CLIENT:', 20, yPosition);
+  doc.text(formatCurrency(settlementData.netToEmployee), 150, yPosition, { align: 'right' });
+  doc.setFont('helvetica', 'normal');
+  yPosition += 20;
+
+  // Legal disclaimers section
   doc.setFontSize(10);
-  doc.text('This statement reflects the distribution of settlement funds as calculated.', 20, yPosition);
   yPosition += 5;
-  doc.text('Please review carefully and contact your attorney with any questions.', 20, yPosition);
-  
-  // Bottom footer
-  yPosition = 280;
+  const disclaimer1 = 'I also been informed that any settlement proceeds are subjected to Department of Revenue';
+  doc.text(disclaimer1, 20, yPosition);
+  yPosition += 5;
+  const disclaimer2 = 'attachment for any outstanding child support (pursuant to M.G.L. c. 175 § 186 (24D)), Medicare';
+  doc.text(disclaimer2, 20, yPosition);
+  yPosition += 5;
+  const disclaimer3 = 'benefits or taxes owed.  These settlement proceeds are also subject to attachment for any benefits';
+  doc.text(disclaimer3, 20, yPosition);
+  yPosition += 5;
+  const disclaimer4 = 'received through Mass Health / The Department of Transitional Assistance and I further understand that';
+  doc.text(disclaimer4, 20, yPosition);
+  yPosition += 5;
+  const disclaimer5 = 'these liens will be paid on my behalf by the Law Offices of Jeffrey S. Glassman in accordance with';
+  doc.text(disclaimer5, 20, yPosition);
+  yPosition += 5;
+  const disclaimer6 = 'Massachusetts General Law.';
+  doc.text(disclaimer6, 20, yPosition);
+  yPosition += 10;
+
+  const certify = 'I certify that I have read the foregoing and agree with its contents.';
+  doc.text(certify, 20, yPosition);
+  yPosition += 15;
+
+  // Signature line
+  doc.text('Signed this _____ day of ____________________, 20____', 20, yPosition);
+  yPosition += 15;
+
+  doc.line(20, yPosition, 150, yPosition);
+  yPosition += 5;
+  doc.text('CLIENT NAME', 20, yPosition);
+  yPosition += 15;
+
+  // Checkboxes
+  doc.setFont('helvetica', 'bold');
+  doc.text('PLEASE CHECK ONE:', 20, yPosition);
+  doc.setFont('helvetica', 'normal');
+  yPosition += 7;
+
+  doc.rect(20, yPosition - 3, 3, 3); // checkbox
+  doc.text('I HAVE RECEIVED MEDICARE BENEFITS.', 28, yPosition);
+  yPosition += 6;
+
+  doc.rect(20, yPosition - 3, 3, 3); // checkbox
+  doc.text('I HAVE NOT RECEIVED MEDICARE BENEFITS.', 28, yPosition);
+  yPosition += 10;
+
+  doc.setFont('helvetica', 'bold');
+  doc.text('PLEASE CHECK ONE:', 20, yPosition);
+  doc.setFont('helvetica', 'normal');
+  yPosition += 7;
+
+  doc.rect(20, yPosition - 3, 3, 3); // checkbox
+  doc.text('I WOULD LIKE TO PICK UP MY SETTLEMENT CHECK FROM ATTORNEY', 28, yPosition);
+  yPosition += 6;
+  doc.text('GLASSMAN', 28, yPosition);
+  yPosition += 6;
+
+  doc.rect(20, yPosition - 3, 3, 3); // checkbox
+  doc.text('I WOULD LIKE MY CHECK MAILED TO ME AT THE FOLLOWING ADDRESS:', 28, yPosition);
+  yPosition += 8;
+
+  // Address lines
+  doc.line(35, yPosition, 160, yPosition);
+  yPosition += 8;
+  doc.line(35, yPosition, 160, yPosition);
+  yPosition += 8;
+  doc.line(35, yPosition, 160, yPosition);
+
+  // Footer
   doc.setFontSize(8);
-  doc.text(`Generated by MA WC Benefits Calculator - ${new Date().toLocaleDateString()}`, 20, yPosition);
-  
+  doc.text('Page 2 of 2', 105, 285, { align: 'center' });
+
   return doc.output('datauristring');
 }
 
@@ -328,74 +447,104 @@ export async function generateSettlementStatementPDF(
  */
 export function generateSettlementStatementExcel(
   settlementData: SettlementStatementData,
-  clientInfo?: { name?: string; attorney?: string; dateOfInjury?: string; date?: string }
+  clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string }
 ): Blob {
   const wb = XLSX.utils.book_new();
-  
+
+  const clientName = clientInfo?.clientName || clientInfo?.name || 'CLIENT NAME';
+  const attorneyName = clientInfo?.attorneyName || clientInfo?.attorney || '';
+
   // Create settlement distribution data
   const wsData = [
     ['Settlement Distribution Statement'],
     [''],
-    ['Attorney:', clientInfo?.attorney || ''],
-    ['Client:', clientInfo?.name || ''],
+    ['Attorney:', attorneyName],
+    ['Client:', clientName],
     ['Date of Injury:', clientInfo?.dateOfInjury || ''],
     ['Date:', clientInfo?.date || new Date().toLocaleDateString()],
     [''],
-    ['SETTLEMENT BREAKDOWN'],
-    ['Gross Settlement Amount:', formatCurrency(settlementData.proposedAmount)],
+    ['DISTRIBUTION OF SETTLEMENT PROCEEDS'],
+    ['Total Settlement:', formatCurrency(settlementData.proposedAmount)],
     [''],
-    ['ATTORNEY FEES & EXPENSES'],
-    [`Standard Fee - ${settlementData.liabilityType === 'accepted' ? 'Accepted Liability (20%)' : 'Unaccepted Liability (15%)'}:`, formatCurrency(settlementData.standardFee)],
+    ['EXPENSES'],
   ];
 
-  if (settlementData.feeReduction > 0) {
-    wsData.push(['Less: Attorney Fee Reduction:', `(${formatCurrency(settlementData.feeReduction)})`]);
-  }
-
-  wsData.push(
-    ['Actual Attorney Fee:', formatCurrency(settlementData.actualFee)],
-  );
-
-  if (settlementData.expenses > 0) {
-    wsData.push(['Attorney Expenses:', formatCurrency(settlementData.expenses)]);
-  }
-
-  wsData.push(
-    ['Total Attorney Deductions:', formatCurrency(settlementData.actualFee + settlementData.expenses)],
-    ['']
-  );
-
-  // Add other deductions
-  if (settlementData.deductions.length > 0) {
-    wsData.push(['OTHER DEDUCTIONS']);
-    settlementData.deductions.forEach(deduction => {
-      if (deduction.amount > 0) {
-        wsData.push([deduction.description, formatCurrency(deduction.amount)]);
+  // Add expenses (handle both formats)
+  let totalExpenses = 0;
+  if (Array.isArray(settlementData.expenses)) {
+    totalExpenses = settlementData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    settlementData.expenses.forEach(expense => {
+      if (expense.amount > 0) {
+        wsData.push([`  ${expense.description}`, formatCurrency(expense.amount)]);
       }
     });
-    if (settlementData.totalDeductions > 0) {
-      wsData.push(['Total Other Deductions:', formatCurrency(settlementData.totalDeductions)]);
+    if (settlementData.expenses.length > 0) {
+      wsData.push(['  Total Expenses:', formatCurrency(totalExpenses)]);
+      wsData.push(['']);
     }
-    wsData.push(['']);
+  } else {
+    totalExpenses = settlementData.expenses;
+    if (totalExpenses > 0) {
+      wsData.push(['  Attorney Expenses', formatCurrency(totalExpenses)]);
+      wsData.push(['']);
+    }
   }
 
+  // Add liens (MVA/GL format)
+  if (settlementData.liens && settlementData.liens.length > 0) {
+    wsData.push(['LIENS']);
+    const totalLiens = settlementData.liens.reduce((sum, lien) => sum + lien.reducedAmount, 0);
+    settlementData.liens.forEach(lien => {
+      if (lien.reducedAmount > 0) {
+        let lienDesc = `  ${lien.description}`;
+        if (lien.originalAmount > lien.reducedAmount) {
+          lienDesc += ` (reduced from ${formatCurrency(lien.originalAmount)})`;
+        }
+        wsData.push([lienDesc, formatCurrency(lien.reducedAmount)]);
+      }
+    });
+    if (totalLiens > 0) {
+      wsData.push(['  Total Liens:', formatCurrency(totalLiens)]);
+      wsData.push(['']);
+    }
+  }
+
+  // Add deductions (WC format)
+  if (settlementData.deductions && settlementData.deductions.length > 0) {
+    wsData.push(['ADDITIONAL DEDUCTIONS']);
+    const totalDeductions = settlementData.deductions.reduce((sum, d) => sum + d.amount, 0);
+    settlementData.deductions.forEach(deduction => {
+      if (deduction.amount > 0) {
+        wsData.push([`  ${deduction.description}`, formatCurrency(deduction.amount)]);
+      }
+    });
+    if (totalDeductions > 0) {
+      wsData.push(['  Total Deductions:', formatCurrency(totalDeductions)]);
+      wsData.push(['']);
+    }
+  }
+
+  // Legal Fee
+  const feePercent = ((settlementData.actualFee / settlementData.proposedAmount) * 100).toFixed(6);
+  wsData.push([`Legal Fee ${feePercent}%:`, formatCurrency(settlementData.actualFee)]);
+  wsData.push(['']);
+
   wsData.push(
-    ['NET AMOUNT TO CLIENT:', formatCurrency(settlementData.netToEmployee)],
+    ['TOTAL DUE CLIENT:', formatCurrency(settlementData.netToEmployee)],
     [''],
     ['This statement reflects the distribution of settlement funds as calculated.'],
     ['Please review carefully and contact your attorney with any questions.']
   );
 
   const ws = XLSX.utils.aoa_to_sheet(wsData);
-  
+
   // Style the header
   if (ws['A1']) ws['A1'].s = { font: { bold: true, size: 16 } };
   if (ws['A8']) ws['A8'].s = { font: { bold: true } };
-  if (ws['A11']) ws['A11'].s = { font: { bold: true } };
   if (ws[`A${wsData.length - 5}`]) ws[`A${wsData.length - 5}`].s = { font: { bold: true, size: 14 } };
-  
+
   XLSX.utils.book_append_sheet(wb, ws, 'Settlement Distribution');
-  
+
   const excelBuffer = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
   return new Blob([excelBuffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
 }
@@ -405,7 +554,7 @@ export function generateSettlementStatementExcel(
  */
 export async function generateSettlementStatementWord(
   settlementData: SettlementStatementData,
-  clientInfo?: { name?: string; attorney?: string; dateOfInjury?: string; date?: string }
+  clientInfo?: { name?: string; clientName?: string; attorney?: string; attorneyName?: string; dateOfInjury?: string; date?: string }
 ): Promise<Blob> {
   const children: any[] = [
     new Paragraph({
@@ -415,13 +564,13 @@ export async function generateSettlementStatementWord(
     })
   ];
 
-  // Note: Logo integration for Word documents requires server-side processing
-  // For now, we'll skip logo in Word documents to avoid compilation issues
+  const clientName = clientInfo?.clientName || clientInfo?.name || 'CLIENT NAME';
+  const attorneyName = clientInfo?.attorneyName || clientInfo?.attorney || '';
 
   // Client info
   const infoRows = [
-    [`Attorney: ${clientInfo?.attorney || ''}`],
-    [`Client: ${clientInfo?.name || ''}`],
+    [`Attorney: ${attorneyName}`],
+    [`Client: ${clientName}`],
     [`Date of Injury: ${clientInfo?.dateOfInjury || ''}`],
     [`Date: ${clientInfo?.date || new Date().toLocaleDateString()}`]
   ];
@@ -432,7 +581,7 @@ export async function generateSettlementStatementWord(
       spacing: { after: 100 }
     })),
     new Paragraph({
-      children: [new TextRun({ text: 'SETTLEMENT BREAKDOWN', bold: true })],
+      children: [new TextRun({ text: 'DISTRIBUTION OF SETTLEMENT PROCEEDS', bold: true })],
       spacing: { before: 200, after: 200 }
     })
   );
@@ -441,79 +590,147 @@ export async function generateSettlementStatementWord(
   const tableRows = [
     new TableRow({
       children: [
-        new TableCell({ children: [new Paragraph('Gross Settlement Amount:')] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'Total Settlement:', bold: true })] })] }),
         new TableCell({ children: [new Paragraph(formatCurrency(settlementData.proposedAmount))] })
       ]
     }),
     new TableRow({
       children: [
-        new TableCell({ children: [new Paragraph('ATTORNEY FEES & EXPENSES')] }),
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'EXPENSES', bold: true })] })] }),
         new TableCell({ children: [new Paragraph('')] })
-      ]
-    }),
-    new TableRow({
-      children: [
-        new TableCell({ children: [new Paragraph(`Standard Fee - ${settlementData.liabilityType === 'accepted' ? 'Accepted Liability (20%)' : 'Unaccepted Liability (15%)'}:`)] }),
-        new TableCell({ children: [new Paragraph(formatCurrency(settlementData.standardFee))] })
       ]
     })
   ];
 
-  if (settlementData.feeReduction > 0) {
-    tableRows.push(
-      new TableRow({
-        children: [
-          new TableCell({ children: [new Paragraph('Less: Attorney Fee Reduction:')] }),
-          new TableCell({ children: [new Paragraph(`(${formatCurrency(settlementData.feeReduction)})`)] })
-        ]
-      })
-    );
+  // Add expenses (handle both formats)
+  let totalExpenses = 0;
+  if (Array.isArray(settlementData.expenses)) {
+    totalExpenses = settlementData.expenses.reduce((sum, exp) => sum + exp.amount, 0);
+    settlementData.expenses.forEach(expense => {
+      if (expense.amount > 0) {
+        tableRows.push(
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph(`  ${expense.description}`)] }),
+              new TableCell({ children: [new Paragraph(formatCurrency(expense.amount))] })
+            ]
+          })
+        );
+      }
+    });
+
+    if (settlementData.expenses.length > 0) {
+      tableRows.push(
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '  Total Expenses:', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph(formatCurrency(totalExpenses))] })
+          ]
+        })
+      );
+    }
+  } else {
+    totalExpenses = settlementData.expenses;
+    if (totalExpenses > 0) {
+      tableRows.push(
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph('  Attorney Expenses')] }),
+            new TableCell({ children: [new Paragraph(formatCurrency(totalExpenses))] })
+          ]
+        })
+      );
+    }
   }
 
-  tableRows.push(
-    new TableRow({
-      children: [
-        new TableCell({ children: [new Paragraph('Actual Attorney Fee:')] }),
-        new TableCell({ children: [new Paragraph(formatCurrency(settlementData.actualFee))] })
-      ]
-    })
-  );
-
-  if (settlementData.expenses > 0) {
+  // Add liens (MVA/GL format)
+  if (settlementData.liens && settlementData.liens.length > 0) {
     tableRows.push(
       new TableRow({
         children: [
-          new TableCell({ children: [new Paragraph('Attorney Expenses:')] }),
-          new TableCell({ children: [new Paragraph(formatCurrency(settlementData.expenses))] })
-        ]
-      })
-    );
-  }
-
-  // Add other deductions
-  if (settlementData.deductions.length > 0) {
-    tableRows.push(
-      new TableRow({
-        children: [
-          new TableCell({ children: [new Paragraph('OTHER DEDUCTIONS')] }),
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'LIENS', bold: true })] })] }),
           new TableCell({ children: [new Paragraph('')] })
         ]
       })
     );
 
+    const totalLiens = settlementData.liens.reduce((sum, lien) => sum + lien.reducedAmount, 0);
+    settlementData.liens.forEach(lien => {
+      if (lien.reducedAmount > 0) {
+        let lienDesc = `  ${lien.description}`;
+        if (lien.originalAmount > lien.reducedAmount) {
+          lienDesc += ` (reduced from ${formatCurrency(lien.originalAmount)})`;
+        }
+        tableRows.push(
+          new TableRow({
+            children: [
+              new TableCell({ children: [new Paragraph(lienDesc)] }),
+              new TableCell({ children: [new Paragraph(formatCurrency(lien.reducedAmount))] })
+            ]
+          })
+        );
+      }
+    });
+
+    if (totalLiens > 0) {
+      tableRows.push(
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '  Total Liens:', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph(formatCurrency(totalLiens))] })
+          ]
+        })
+      );
+    }
+  }
+
+  // Add deductions (WC format)
+  if (settlementData.deductions && settlementData.deductions.length > 0) {
+    tableRows.push(
+      new TableRow({
+        children: [
+          new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: 'ADDITIONAL DEDUCTIONS', bold: true })] })] }),
+          new TableCell({ children: [new Paragraph('')] })
+        ]
+      })
+    );
+
+    const totalDeductions = settlementData.deductions.reduce((sum, d) => sum + d.amount, 0);
     settlementData.deductions.forEach(deduction => {
       if (deduction.amount > 0) {
         tableRows.push(
           new TableRow({
             children: [
-              new TableCell({ children: [new Paragraph(deduction.description)] }),
+              new TableCell({ children: [new Paragraph(`  ${deduction.description}`)] }),
               new TableCell({ children: [new Paragraph(formatCurrency(deduction.amount))] })
             ]
           })
         );
       }
     });
+
+    if (totalDeductions > 0) {
+      tableRows.push(
+        new TableRow({
+          children: [
+            new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: '  Total Deductions:', bold: true })] })] }),
+            new TableCell({ children: [new Paragraph(formatCurrency(totalDeductions))] })
+          ]
+        })
+      );
+    }
   }
+
+  // Legal Fee
+  const feePercent = ((settlementData.actualFee / settlementData.proposedAmount) * 100).toFixed(6);
+  tableRows.push(
+    new TableRow({
+      children: [
+        new TableCell({ children: [new Paragraph({ children: [new TextRun({ text: `Legal Fee ${feePercent}%`, bold: true })] })] }),
+        new TableCell({ children: [new Paragraph(formatCurrency(settlementData.actualFee))] })
+      ]
+    })
+  )
 
   tableRows.push(
     new TableRow({

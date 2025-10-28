@@ -5,25 +5,34 @@ export interface Lien {
   reducedAmount: number;
 }
 
+export interface Expense {
+  id: string;
+  description: string;
+  amount: number;
+}
+
 export interface MVASettlementData {
   grossSettlement: number;
   attorneyFeePercent: number;
-  caseExpenses: number;
+  expenses: Expense[];
   liens: Lien[];
+  caseType?: 'mva' | 'gl'; // Optional case type for unified calculator
 }
 
 export interface GLSettlementData {
   grossSettlement: number;
   attorneyFeePercent: number;
-  caseExpenses: number;
+  expenses: Expense[];
   liens: Lien[];
+  caseType?: 'mva' | 'gl'; // Optional case type for unified calculator
 }
 
 export interface SettlementCalculationResult {
   grossSettlement: number;
   attorneyFee: number;
   attorneyFeePercent: number;
-  caseExpenses: number;
+  totalExpenses: number;
+  expenses: Expense[];
   totalLiensOriginal: number;
   totalLiensReduced: number;
   lienReductionSavings: number;
