@@ -436,10 +436,13 @@ export async function generateSettlementStatementPDF(
 
 I also have been informed that any settlement proceeds are subjected to Department of Revenue attachment for any outstanding child support (pursuant to M.G.L. c. 175 § 186 (24D)), Medicare benefits or taxes owed.  These settlement proceeds are also subject to attachment for any benefits received through Mass Health / The Department of Transitional Assistance and I further understand that these liens will be paid on my behalf by the Law Offices of Jeffrey S. Glassman in accordance with Massachusetts General Law.`;
 
-  // Split text to fit within margins (170mm width)
+  // Split text to fit within margins (170mm width) and render line by line
   const splitText = doc.splitTextToSize(authorizationText, 170);
-  doc.text(splitText, leftMargin, yPosition);
-  yPosition += 10;
+  splitText.forEach((line: string) => {
+    doc.text(line, leftMargin, yPosition);
+    yPosition += 5; // 5mm line height
+  });
+  yPosition += 10; // Add spacing after authorization text
 
   // Certification statement
   doc.text('I certify that I have read the foregoing and agree with its contents.', leftMargin, yPosition);
